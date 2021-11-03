@@ -1,7 +1,18 @@
-from manim import *
+"""
+Some of the shots are in manim. Maybe eventually all of the shots will be.
+"""
 
-class EqnDance(Scene):
-    def create(self):
-        eqn=MathTex("a^2")
+from manim import *
+import numpy as np
+
+background="#e0e0ff"
+eqn_color='#1a5fb4'
+
+
+class PEG0(Scene):
+    def construct(self):
+        eqn = MathTex("a^2")
         print(eqn)
         self.add(eqn)
+
+

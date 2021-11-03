@@ -1,3 +1,5 @@
-pytest
-manim
+-e git+ssh://git@github.com/kwan3217/picturebox.git#egg=picturebox
 -e git+ssh://git@github.com/kwan3217/kwanmath.git#egg=kwanmath
+manim
+pytest
+
