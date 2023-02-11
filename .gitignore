@@ -1,7 +1,6 @@
 /.idea/
 /venv/
 __pycache__/
-/render/
 *_backup*.kdenlive
 .*
 !.gitignore
