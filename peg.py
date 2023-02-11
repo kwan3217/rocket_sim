@@ -98,7 +98,7 @@ class PEG:
             result=self.c(n - 1, t) * self.tau - self.v_e * t ** (n + 1) / (n * (n + 1))
         return result
 
-    def calculate_steering(self):
+    def calc_ab(self):
         """
         Given the current vertical state r and rdot, and current estimate of burn time
         remaining T, update the steering constants A and B
@@ -112,38 +112,36 @@ class PEG:
         kc=rT-r-rdot*T=c0*A+c1*B
 
         This is formed into matrices and vectors to apply linear algebra
-        [A][x]=[B]
+        [A][x]=[y]
         [A]=[b0,b1]
             [c0,c1]
         [x]=[A]
             [B]
-        [B]=[kb]
+        [y]=[kb]
             [kc]
         Watch out for the notation collision here -- B is not the
-        same as [B] or b.
+        same as b.
 
-        d=b0*c1-b1*c0 #determinant of [A]
-        nA=kb*c1-b1*kc
-        nB=b0*kc-kb*c0
-
-        A=nA/d
-        B=nB/d
         """
         if self.T<self.T_stopsteer:
             # Stop calculating steering constants when less than 7 seconds to go
             return
-        #Solve the explicit guidance equations
-        kb=self.rdotT-self.rdot
-        kc=self.rT-self.r-self.rdot*self.T
-        b0=self.b(0)
-        b1=self.b(1)
-        c0=self.c(0)
-        c1=self.c(1)
-        d=b0*c1-b1*c0 #determinant of [A]
-        nA=kb*c1-b1*kc #determinant of [A] with left column replaced by [B]
-        nB=b0*kc-kb*c0 #determinant of [A] with right column replaced by [B]
-        self.A=nA/d
-        self.B=nB/d
+        # Solve the explicit guidance equations. Store all the intermediate values in
+        # fields so that we can see and plot them later if we want
+        self.kb=self.rdotT-self.rdot
+        self.kc=self.rT-self.r-self.rdot*self.T
+        self.b0=self.b(0)
+        self.b1=self.b(1)
+        self.c0=self.c(0)
+        self.c1=self.c(1)
+        self.d=self.b0*self.c1-self.b1*self.c0 #determinant of [A]
+        self.nA=self.kb*self.c1-self.b1*self.kc #determinant of [A] with left column replaced by [B]
+        self.nB=self.b0*self.kc-self.kb*self.c0 #determinant of [A] with right column replaced by [B]
+        self.A=self.nA/self.d
+        self.B=self.nB/self.d
+        #Check that the solved-for values actually solve the equations
+        assert math.isclose(self.rT,self.r+self.rdot*self.T+self.c0*self.A+self.c1*self.B,abs_tol=1e-3)
+        assert math.isclose(self.rdotT,self.rdot+self.b0*self.A+self.b1*self.B,abs_tol=1e-3)
 
     def estimate_tgo(self):
         """
@@ -152,11 +150,7 @@ class PEG:
         """
         pass
 
-    def project_steering(self, dt):
-        self.A=self.A+self.B*dt
-        self.T=self.T-dt
-
-    def fly(self,dt=2.0, ddt=0.1, fps=10):
+    def fly(self,dt=2.0, fps=16):
         """
 
         Given current steering constants, fly the rocket for one major cycle
@@ -206,32 +200,37 @@ class PEG:
                 print("About to raise assertion error")
             assert abs(vdot(vprojr,vprojq))<0.001
             assert math.isclose(v**2,qdot**2+rdot**2)
-            grav=self.mu/r**2    #gravity acceleration magnitude
-            cent=omega**2*r      #centrifugal acceleration magnitude
-            a=self.a(t) #Magnitude of thrust acceleration
-            fdotr=self.A+self.B*t+(grav-cent)/a #Component of thrust direction in r direction
-            fdotq=np.sqrt(1-fdotr**2)           #component of thrust direction in q direction
-            fhat=fdotr*rhat+fdotq*qhat          #Thrust direction vector
-            f=fhat*a  #Thrust acceleration vector
+            grav=self.mu/r**2                    # gravity acceleration magnitude
+            cent=omega**2*r                      # centrifugal acceleration magnitude
+            a=self.a(t)                          # Magnitude of thrust acceleration
+            fdotr=self.A+self.B*t+(grav-cent)/a  # Component of thrust direction in r direction
+            fdotq=np.sqrt(1-fdotr**2)            # component of thrust direction in q direction
+            fhat=fdotr*rhat+fdotq*qhat           # Thrust direction vector
+            f=fhat*a                             # Thrust acceleration vector
             dv=-rhat*grav+f
             ddx=dv[0][0]
             ddy=dv[1][0]
             return np.array([dx,dy,ddx,ddy])
         x0=np.array([self.r,0,self.rdot,self.qdot])
-        _,(x1,y1,dx1,dy1)=rk4(F=F,t0=0,y0=x0,t1=dt,dt=ddt,fps=fps)
-        rv=vcomp((x1,y1))
-        vv=vcomp((dx1,dy1))
-        rhat=rv/vlength(rv)
-        vprojr = vdot(vv, rhat) * rhat  # projection of speed in radial direction
-        rdot = vlength(vprojr)  # vertical speed
-        vprojq = vv - vprojr  # projection of speed perpendicular to radial direction
-        qdot = vlength(vprojq)  # horizontal speed
-        qhat = vprojq / qdot  # horizontal direction
-        omega = qdot / r  # angular velocity
-        self.r=vlength(rv)
-        self.rdot=rdot
-        self.qdot=qdot
+        _,(x1,y1,dx1,dy1)=rk4(F=F,t0=0,y0=x0,t1=dt,fps=fps)
+        self.rv=vcomp((x1,y1))
+        self.vv=vcomp((dx1,dy1))
+        self.rhat=self.rv/vlength(self.rv)
+        self.vprojr = vdot(self.vv, self.rhat) * self.rhat  # projection of speed in radial direction
+        self.rdot = vlength(self.vprojr)                    # vertical speed
+        self.vprojq = self.vv - self.vprojr                 # projection of speed perpendicular to radial direction
+        self.qdot = vlength(self.vprojq)                    # horizontal speed
+        self.qhat = self.vprojq / self.qdot                 # horizontal direction
+        self.omega = self.qdot / r                          # angular velocity
+        self.r=vlength(self.rv)
         print(self)
+
+    def update_abt(self,dt=2.0):
+        self.A+=self.B*dt
+        self.T-=dt
+        self.a0=self.a(dt)
+        self.tau-=dt
+
 
     def predict_r(self,t):
         """
@@ -254,7 +253,7 @@ class PEG:
 
     def predict_rdot(self,t):
         """
-        Predict the vertical state at some arbitrary time in the future
+        Predict the vertical speed at some arbitrary time in the future
 
         :param t:
         :return:
