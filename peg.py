@@ -14,20 +14,20 @@ def ag(sv,mu):
 
 class PEG:
     def __init__(self):
-        self.r_e=6378137 #Surface radius of Earth -- only really relevant
+        self.r_e=6378137.0 #Surface radius of Earth -- only really relevant
                          #to caclulate altitude for outside reference
         self.mu=398600.4415e9
-        self.T = 250  # Initial estimate of time to go
-        self.a0 = 15  # Current acceleration measurement
-        self.rdotT = 0  # Target vertical speed
-        self.rT = self.r_e + 185000  # Target radius
-        self.v_e = 4500  # Typical value for hydrolox upper stage
+        self.T = 250.0  # Initial estimate of time to go
+        self.a0 = 15.0  # Current acceleration measurement
+        self.rdotT = 0.0  # Target vertical speed
+        self.rT = self.r_e + 185000.0  # Target radius
+        self.v_e = 4500.0  # Typical value for hydrolox upper stage
         self.tau=None
         self.A=0
         self.B=0
-        self.r=self.r_e+75000 #Current radius
-        self.rdot=1000 #Current vertical speed
-        self.qdot=1000 #Current horizontal speed
+        self.r=self.r_e+75000.0 #Current radius
+        self.rdot=1000.0 #Current vertical speed
+        self.qdot=1000.0 #Current horizontal speed
         self.T_stopsteer=7
 
     def calc_tau(self):
