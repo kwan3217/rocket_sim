@@ -13,15 +13,36 @@ def ag(sv,mu):
     return -mu*rv/r**3
 
 class PEG:
-    def __init__(self):
-        self.r_e=6378137.0 #Surface radius of Earth -- only really relevant
-                         #to caclulate altitude for outside reference
-        self.mu=398600.4415e9
-        self.T = 250.0  # Initial estimate of time to go
-        self.a0 = 15.0  # Current acceleration measurement
-        self.rdotT = 0.0  # Target vertical speed
-        self.rT = self.r_e + 185000.0  # Target radius
-        self.v_e = 4500.0  # Typical value for hydrolox upper stage
+    def __init__(self,r_e:float=6378137.0,
+                      mu:float=398600.4415e9,
+                      T:float=250.0,
+                      a0:float=15.0,
+                      rdot:float=0.0,
+                      rT:float=None,
+                      hT:float=185000.0,
+                      v_e:float=4500.0):
+        """
+        All units should be in a consistent scale, such as SI.
+        :param r_e: Surface radius of Earth -- only really relevant
+                    to caclulate altitude for outside reference
+        :param mu: Gravitational parameter GM (for SI, m**3/s**2)
+        :param T: Initial estimate of time to go
+        :param a0: Current acceleration measurement
+        :param rdotT: target vertical speed
+        :param rT: target radius
+        :param hT: target altitude, used if rT is None
+        :param v_e: effective exhaust velocity, default value is typical for hydrolox upper stage
+        """
+        self.r_e=r_e
+        self.mu=mu
+        self.T = T
+        self.a0 = a0
+        self.rdotT = rdot  # Target vertical speed
+        if rT is None:
+            self.rT = self.r_e + hT
+        else:
+            self.rT = rT
+        self.v_e = v_e  # Typical value for hydrolox upper stage
         self.tau=None
         self.A=0
         self.B=0
