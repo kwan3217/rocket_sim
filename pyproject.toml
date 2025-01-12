@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rocket_sim"
+version = "0.1.0"
+authors = [
+  { name="kwan3217", email="kwan3217@gmail.com" },
+]
+description = "Rocket simulation environment"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+dependencies=[
+    "spiceypy",
+    "matplotlib",
+    "manim",
+    "pytest",
+    "kwanmath @ git+ssh://git@github.com/kwan3217/kwanmath.git",
+    "bmw @ git+ssh://git@github.com/kwan3217/bmw.git",
+    "kwanspice @ git+ssh://git@github.com/kwan3217/kwanspice.git",
+    "atmosphere @ git+ssh://git@github.com/kwan3217/atmosphere.git"
+]
+
+[project.urls]
+Homepage = "https://github.com/kwan3217/Ranger/"
+Issues = "https://github.com/kwan3217/Ranger/issues"
