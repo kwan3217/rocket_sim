@@ -4,6 +4,9 @@
 # Manim movie renders
 *.mp4
 
+# Manim movie file lists
+*.txt
+
 # Manim TeX render intermediate files
 *.aux
 *.dvi
