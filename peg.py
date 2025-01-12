@@ -143,6 +143,12 @@ class PEG:
         Watch out for the notation collision here -- B is not the
         same as b.
 
+        d=b0*c1-b1*c0 #determinant of [A]
+        nA=kb*c1-b1*kc
+        nB=b0*kc-kb*c0
+
+        A=nA/d
+        B=nB/d
         """
         if self.T<self.T_stopsteer:
             # Stop calculating steering constants when less than 7 seconds to go
@@ -170,6 +176,10 @@ class PEG:
         :return:
         """
         pass
+
+    def project_steering(self, dt):
+        self.A=self.A+self.B*dt
+        self.T=self.T-dt
 
     def fly(self,dt=2.0, fps=16):
         """

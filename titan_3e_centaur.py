@@ -2,6 +2,7 @@
 Model of a Titan-III/Centaur (Titan 3E)
 """
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 def trap(Fcurve:dict[float,float])->float:
@@ -31,16 +32,36 @@ class SolidRocketMotor:
                        First point must be (0,0), last point must be (t1,0). Thrust and mass loss are presumed
                        to be zero before t=0 and after t=t1.
         """
+        # All of this is based on mass flow rate. There is a known amount of propellant,
+        # the difference between M0 and M1.
+        self.mass=M0
+        self.mprop=M0-M1
+        # The curve passed in is proportional to thrust, chamber pressure, etc
+        # but can be normalized so that the area is the total amount of propellant
+        # in mass units (kg) and the time axis is in time units (s), which therefore
+        # give the dependent variable being in units of mass units per time unit (kg/s)
+        # This is the mass flow rate at any time.
         self.mdot0=-F0/ve0 #Mass flow rate in vacuum, kg/s
         self.mdotsl=-Fsl/vesl
-        self.mprop=M0-M1
         self.tburn0=self.mprop/-self.mdot0
         self.tburnsl=self.mprop/-self.mdotsl
         self.itot0=self.tburn0*F0
         self.itotsl=self.tburnsl*Fsl
+        #Area of curve in y*sec, where y is whatever the units of the curve are
         Acurve=trap(Fcurve)
-        tcurve=np.array([t for t in Fcurve])
+        self.tcurve=np.array([t for t in Fcurve])
+        Fcurve=np.array([Fcurve[t] for t in Fcurve])
+        #The area of Fcurve is Acurve y*s. We want mdotcurve with area -mprop
+        #and units kg. so divide Fcurve by Acurve to get a curve with area 1,
+        #then multiply by -mprop
+        self.mdotcurve=-Fcurve*self.mprop/Acurve
+        plt.plot(self.tcurve,self.mdotcurve)
+        expected_area=-self.mprop
+        actual_area=trap({t:mdot for t,mdot in zip(self.tcurve,self.mdotcurve)})
+        assert np.isclose(expected_area,actual_area)
         pass
+    def start(self,t0:float):
+
     def step(self,t:float,dt:float):
         """
 

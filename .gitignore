@@ -4,4 +4,6 @@ __pycache__/
 *_backup*.kdenlive
 .*
 !.gitignore
+/media/
+
 
