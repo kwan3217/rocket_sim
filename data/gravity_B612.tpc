@@ -1,0 +1,7 @@
+Gravity field of imaginary world B612, used as a test case in tests/test_rocket_sim/test_gravity.py
+We use the asteroid number 0xB612=46610 and the normal Spice convention for asteroids, which is 2
+million plus the asteroid number.
+\begindata
+BODY20046610_GM=15.915494309189533e-9
+BODY20046610_RADII=(0.01 0.01 0.01)
+BODY20046610_J2=0.1

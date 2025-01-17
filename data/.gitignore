@@ -1,0 +1,11 @@
+# JPL standard kernels. On my system, these are symlinks to the actual data. You can get them from JPL NAIF
+
+
+# Solar system Developmental Ephemeris 440, https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440.bsp
+de440.bsp
+
+# Planetary constant kernel 11, https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc
+pck00011.tpc
+
+# Gravitational constants for DE440, https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/gm_de440.tpc
+gm_de440.tpc
