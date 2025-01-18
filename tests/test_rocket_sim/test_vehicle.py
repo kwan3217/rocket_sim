@@ -4,9 +4,8 @@ import numpy as np
 import pytest
 from matplotlib import pyplot as plt
 
-from rocket_sim.vehicle import Stage, Engine, Vehicle, TestStand, ZeroGRange
-
-
+from rocket_sim.vehicle import Stage, Engine, Vehicle
+from rocket_sim.universe import ZeroGRange, TestStand
 
 lb_kg_conv=0.45359237    # this many kg in 1 lb
 g0=9.80665               # Used to convert kgf to N
