@@ -40,7 +40,7 @@ conditions.
 
 ## Implementation Roadmap
 
-- **Phase 1 - Test Stand**:
+- **Phase 1 - Test Stand** Complete!:
   - Implement a basic vehicle model with a single propulsion module.
   - Simulate static firings to verify thrust and mass flow
     characteristics.
@@ -48,13 +48,13 @@ conditions.
 
 - **Phase 2 - Orbital Motion**:
   - Incorporate gravitational forces, including simple two-body
-    dynamics and J2 perturbations.
+    dynamics and J2 perturbations. Complete!
   - Extend the vehicle model to include multi-stage rockets like the
-    Titan-Centaur for the Voyager mission.
+    Titan-Centaur for the Voyager mission. Complete!
   - Incorporate drag forces and an atmosphere model valid all the way
     down to the surface.
   - Simulate the launch into parking orbit and subsequent maneuvers
-    like the dogleg for Voyager 2.
+    like the dogleg for Voyager 2. In progress.
 
 - **Phase 3 - Trajectory Optimization**:
   - Use optimization libraries like `scipy.optimize` for tuning
@@ -63,24 +63,30 @@ conditions.
   - Implement reverse time integration for trajectory reconstruction,
     starting from known final states (e.g., from SPICE kernels).
 
-## Current Status
-Nothing yet, but the current MVP is:
+## Road map
+Current MVP achieved are:
 
-- Basic vehicle description and guidance classes are implemented.
-- Test stand simulation is operational, providing insights into
-  vehicle dynamics under static conditions.
-- Orbital simulation includes basic two-body and J2 effects with thrust.
+* Vehicle can be run on a test stand to get thrust, acceleration, and mass
+* Vehicle can be run on zero-g test range to get delta-v
+* Gravity and sequencing is implemented to support PM maneuver for Voyager
+* Simulation can run in reverse to support de-boost, propagating backwards
+  through the PM maneuver to reconstruct the pre-PM orbit from the PM maneuver
+  and known post-PM orbit.
+- Orbital simulation includes basic two-body, J2 of central body, and third-body
+  perturbations.
 
-## Future Enhancements
+Next MVP(s):
+* Integration with `scipy.optimize.minimize` to tune PM maneuver to better hit
+  the partially-documented pre-PM orbit
+* De-boost through Centaur burn 2 to get to parking orbit
+* Implement the rest of the Titan-Centaur 3E vehicle
+* Implement drag
+* Import the Powered Explicit Guidance maneuver
+* Import the documented stage 0 pitch program
+* Detailed thrust profiles for solid and liquid engines.
+* Export Spice kernels
+* Export POV and/or Blender to visualize the results
+* Extend to 6DoF, including rotational dynamics and kinematics, moments of inertia,
+  and steering by actuators (like RCS, engine gimbal, control surface, etc) instead
+  of just pointing the direction Guidance says.
 
-- Detailed thrust profiles for solid and liquid engines.
-- Support for more complex guidance algorithms.
-- Integration with external astrodynamics tools for validation and
-  more complex scenarios.
-
-## Usage
-
-For detailed instructions on how to use the simulator, please refer to
-the `docs/` folder or run the example scripts in `examples/`.
-Contributions and suggestions are welcome; please see our
-[CONTRIBUTING.md](CONTRIBUTING.md) for how to get involved.
