@@ -4,7 +4,7 @@ Vehicle model, including engines and stages.
 Created 2025-01-12
 """
 from copy import copy
-from typing import Callable, Any
+from typing import Callable
 
 import numpy as np
 
