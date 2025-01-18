@@ -90,8 +90,8 @@ class Engine:
 
 class Vehicle:
     def __init__(self,*,
-                 stages:list[Stage],
-                 engines:list[tuple[Engine,int]],
+                 stages:list[Stage]|None=None,
+                 engines:list[tuple[Engine,int]]|None=None,
                  guide:Callable[...,np.array]|None=None,
                  extras:list[Callable[...,None]]|None=None):
         """
@@ -115,8 +115,8 @@ class Vehicle:
                       def extra_foo(*,t:float,dt:float,y:np.ndarray,major_step:bool,vehicle:Vehicle)
 
         """
-        self.stages:list[Stage]=[copy(stage) for stage in stages]
-        self.engines:list[Engine]=[copy(engine) for engine,_ in engines]
+        self.stages:list[Stage]=[copy(stage) for stage in stages] if stages is not None else []
+        self.engines:list[Engine]=[copy(engine) for engine,_ in engines] if engines is not None else []
         for self_engine,(_,i_stage) in zip(self.engines,engines):
             self_engine.connect_prop(self.stages[i_stage])
         self.guide:Callable=guide
