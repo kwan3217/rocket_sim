@@ -58,7 +58,6 @@ Voyager1=Vehicle(stages=[Voyager1Stage,PMStage],engines=[(PMEngine,1)],extras=[t
 
 @pytest.mark.parametrize("vehicle", [copy(Voyager1)])
 def test_stand(vehicle:Vehicle):
-    vehicle.tlm={}
     stand=TestStand(vehicles=[vehicle],fps=10)
     stand.runto(t1=45.1)
     plot_tlm(vehicle)
@@ -66,14 +65,12 @@ def test_stand(vehicle:Vehicle):
 
 @pytest.mark.parametrize("vehicle", [copy(Voyager1)])
 def test_zero_g_range(vehicle:Vehicle):
-    vehicle.tlm={}
     stand=ZeroGRange(vehicles=[vehicle],fps=10)
     stand.runto(t1=45.1)
     plot_tlm(vehicle)
 
 @pytest.mark.parametrize("vehicle", [copy(Voyager1)])
 def test_time_reverse(vehicle:Vehicle):
-    vehicle.tlm={}
     stand=ZeroGRange(vehicles=[vehicle],fps=10)
     stand.runto(t1=45.1)
     stand.runto(t1=0.0)
