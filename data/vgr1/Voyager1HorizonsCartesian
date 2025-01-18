@@ -1,0 +1,335 @@
+%General Mission Analysis Tool(GMAT) Script
+%Created: 2025-01-11 00:07:42
+
+
+%----------------------------------------
+%---------- Spacecraft
+%----------------------------------------
+
+Create Spacecraft Voyager1HorizonsCartesian;
+GMAT Voyager1HorizonsCartesian.DateFormat = TDBGregorian;
+GMAT Voyager1HorizonsCartesian.Epoch = '05 Sep 1977 14:59:24.383';
+GMAT Voyager1HorizonsCartesian.CoordinateSystem = EarthICRF;
+GMAT Voyager1HorizonsCartesian.DisplayStateType = Cartesian;
+GMAT Voyager1HorizonsCartesian.X = 24399.88859021423;
+GMAT Voyager1HorizonsCartesian.Y = 33999.40295523857;
+GMAT Voyager1HorizonsCartesian.Z = 17544.92637910197;
+GMAT Voyager1HorizonsCartesian.VX = 3.973398886605192;
+GMAT Voyager1HorizonsCartesian.VY = 9.153589778994373;
+GMAT Voyager1HorizonsCartesian.VZ = 4.81566952047401;
+GMAT Voyager1HorizonsCartesian.DryMass = 850;
+GMAT Voyager1HorizonsCartesian.Cd = 2.2;
+GMAT Voyager1HorizonsCartesian.Cr = 1.8;
+GMAT Voyager1HorizonsCartesian.DragArea = 15;
+GMAT Voyager1HorizonsCartesian.SRPArea = 1;
+GMAT Voyager1HorizonsCartesian.SPADDragScaleFactor = 1;
+GMAT Voyager1HorizonsCartesian.SPADSRPScaleFactor = 1;
+GMAT Voyager1HorizonsCartesian.AtmosDensityScaleFactor = 1;
+GMAT Voyager1HorizonsCartesian.ExtendedMassPropertiesModel = 'None';
+GMAT Voyager1HorizonsCartesian.NAIFId = -10000001;
+GMAT Voyager1HorizonsCartesian.NAIFIdReferenceFrame = -9000001;
+GMAT Voyager1HorizonsCartesian.OrbitColor = Red;
+GMAT Voyager1HorizonsCartesian.TargetColor = Teal;
+GMAT Voyager1HorizonsCartesian.OrbitErrorCovariance = [ 1e+70 0 0 0 0 0 ; 0 1e+70 0 0 0 0 ; 0 0 1e+70 0 0 0 ; 0 0 0 1e+70 0 0 ; 0 0 0 0 1e+70 0 ; 0 0 0 0 0 1e+70 ];
+GMAT Voyager1HorizonsCartesian.CdSigma = 1e+70;
+GMAT Voyager1HorizonsCartesian.CrSigma = 1e+70;
+GMAT Voyager1HorizonsCartesian.Id = 'SatId';
+GMAT Voyager1HorizonsCartesian.Attitude = CoordinateSystemFixed;
+GMAT Voyager1HorizonsCartesian.SPADSRPInterpolationMethod = Bilinear;
+GMAT Voyager1HorizonsCartesian.SPADSRPScaleFactorSigma = 1e+70;
+GMAT Voyager1HorizonsCartesian.SPADDragInterpolationMethod = Bilinear;
+GMAT Voyager1HorizonsCartesian.SPADDragScaleFactorSigma = 1e+70;
+GMAT Voyager1HorizonsCartesian.AtmosDensityScaleFactorSigma = 1e+70;
+GMAT Voyager1HorizonsCartesian.ModelFile = 'aura.3ds';
+GMAT Voyager1HorizonsCartesian.ModelOffsetX = 0;
+GMAT Voyager1HorizonsCartesian.ModelOffsetY = 0;
+GMAT Voyager1HorizonsCartesian.ModelOffsetZ = 0;
+GMAT Voyager1HorizonsCartesian.ModelRotationX = 0;
+GMAT Voyager1HorizonsCartesian.ModelRotationY = 0;
+GMAT Voyager1HorizonsCartesian.ModelRotationZ = 0;
+GMAT Voyager1HorizonsCartesian.ModelScale = 1;
+GMAT Voyager1HorizonsCartesian.AttitudeDisplayStateType = 'Quaternion';
+GMAT Voyager1HorizonsCartesian.AttitudeRateDisplayStateType = 'AngularVelocity';
+GMAT Voyager1HorizonsCartesian.AttitudeCoordinateSystem = EarthMJ2000Eq;
+GMAT Voyager1HorizonsCartesian.EulerAngleSequence = '321';
+
+Create Spacecraft Voyager1CentaurPostMeco2;
+GMAT Voyager1CentaurPostMeco2.DateFormat = TDBGregorian;
+GMAT Voyager1CentaurPostMeco2.Epoch = '05 Sep 1977 13:56:49.171';
+GMAT Voyager1CentaurPostMeco2.CoordinateSystem = EarthICRF;
+GMAT Voyager1CentaurPostMeco2.DisplayStateType = Keplerian;
+GMAT Voyager1CentaurPostMeco2.SMA = -7816.236360000004;
+GMAT Voyager1CentaurPostMeco2.ECC = 1.841709999999999;
+GMAT Voyager1CentaurPostMeco2.INC = 28.51649999999998;
+GMAT Voyager1CentaurPostMeco2.RAAN = 3.847524156170183;
+GMAT Voyager1CentaurPostMeco2.AOP = 359.9999987925818;
+GMAT Voyager1CentaurPostMeco2.TA = 0;
+GMAT Voyager1CentaurPostMeco2.DryMass = 850;
+GMAT Voyager1CentaurPostMeco2.Cd = 2.2;
+GMAT Voyager1CentaurPostMeco2.Cr = 1.8;
+GMAT Voyager1CentaurPostMeco2.DragArea = 15;
+GMAT Voyager1CentaurPostMeco2.SRPArea = 1;
+GMAT Voyager1CentaurPostMeco2.SPADDragScaleFactor = 1;
+GMAT Voyager1CentaurPostMeco2.SPADSRPScaleFactor = 1;
+GMAT Voyager1CentaurPostMeco2.AtmosDensityScaleFactor = 1;
+GMAT Voyager1CentaurPostMeco2.ExtendedMassPropertiesModel = 'None';
+GMAT Voyager1CentaurPostMeco2.NAIFId = -10002001;
+GMAT Voyager1CentaurPostMeco2.NAIFIdReferenceFrame = -9002001;
+GMAT Voyager1CentaurPostMeco2.OrbitColor = Green;
+GMAT Voyager1CentaurPostMeco2.TargetColor = LightGray;
+GMAT Voyager1CentaurPostMeco2.OrbitErrorCovariance = [ 1e+70 0 0 0 0 0 ; 0 1e+70 0 0 0 0 ; 0 0 1e+70 0 0 0 ; 0 0 0 1e+70 0 0 ; 0 0 0 0 1e+70 0 ; 0 0 0 0 0 1e+70 ];
+GMAT Voyager1CentaurPostMeco2.CdSigma = 1e+70;
+GMAT Voyager1CentaurPostMeco2.CrSigma = 1e+70;
+GMAT Voyager1CentaurPostMeco2.Id = 'SatId';
+GMAT Voyager1CentaurPostMeco2.Attitude = CoordinateSystemFixed;
+GMAT Voyager1CentaurPostMeco2.SPADSRPInterpolationMethod = Bilinear;
+GMAT Voyager1CentaurPostMeco2.SPADSRPScaleFactorSigma = 1e+70;
+GMAT Voyager1CentaurPostMeco2.SPADDragInterpolationMethod = Bilinear;
+GMAT Voyager1CentaurPostMeco2.SPADDragScaleFactorSigma = 1e+70;
+GMAT Voyager1CentaurPostMeco2.AtmosDensityScaleFactorSigma = 1e+70;
+GMAT Voyager1CentaurPostMeco2.ModelFile = 'aura.3ds';
+GMAT Voyager1CentaurPostMeco2.ModelOffsetX = 0;
+GMAT Voyager1CentaurPostMeco2.ModelOffsetY = 0;
+GMAT Voyager1CentaurPostMeco2.ModelOffsetZ = 0;
+GMAT Voyager1CentaurPostMeco2.ModelRotationX = 0;
+GMAT Voyager1CentaurPostMeco2.ModelRotationY = 0;
+GMAT Voyager1CentaurPostMeco2.ModelRotationZ = 0;
+GMAT Voyager1CentaurPostMeco2.ModelScale = 1;
+GMAT Voyager1CentaurPostMeco2.AttitudeDisplayStateType = 'Quaternion';
+GMAT Voyager1CentaurPostMeco2.AttitudeRateDisplayStateType = 'AngularVelocity';
+GMAT Voyager1CentaurPostMeco2.AttitudeCoordinateSystem = EarthMJ2000Eq;
+GMAT Voyager1CentaurPostMeco2.EulerAngleSequence = '321';
+
+%----------------------------------------
+%---------- Hardware Components
+%----------------------------------------
+
+Create ChemicalThruster CentaurRL10;
+GMAT CentaurRL10.CoordinateSystem = Local;
+GMAT CentaurRL10.Origin = Earth;
+GMAT CentaurRL10.Axes = VNB;
+GMAT CentaurRL10.ThrustDirection1 = 1;
+GMAT CentaurRL10.ThrustDirection2 = 0;
+GMAT CentaurRL10.ThrustDirection3 = 0;
+GMAT CentaurRL10.DutyCycle = 1;
+GMAT CentaurRL10.ThrustScaleFactor = 1;
+GMAT CentaurRL10.DecrementMass = true;
+GMAT CentaurRL10.Tank = {CentaurTanks};
+GMAT CentaurRL10.MixRatio = [ 1 ];
+GMAT CentaurRL10.GravitationalAccel = 9.81;
+GMAT CentaurRL10.C1 = 10;
+GMAT CentaurRL10.C2 = 0;
+GMAT CentaurRL10.C3 = 0;
+GMAT CentaurRL10.C4 = 0;
+GMAT CentaurRL10.C5 = 0;
+GMAT CentaurRL10.C6 = 0;
+GMAT CentaurRL10.C7 = 0;
+GMAT CentaurRL10.C8 = 0;
+GMAT CentaurRL10.C9 = 0;
+GMAT CentaurRL10.C10 = 0;
+GMAT CentaurRL10.C11 = 0;
+GMAT CentaurRL10.C12 = 0;
+GMAT CentaurRL10.C13 = 0;
+GMAT CentaurRL10.C14 = 0;
+GMAT CentaurRL10.C15 = 0;
+GMAT CentaurRL10.C16 = 0;
+GMAT CentaurRL10.K1 = 300;
+GMAT CentaurRL10.K2 = 0;
+GMAT CentaurRL10.K3 = 0;
+GMAT CentaurRL10.K4 = 0;
+GMAT CentaurRL10.K5 = 0;
+GMAT CentaurRL10.K6 = 0;
+GMAT CentaurRL10.K7 = 0;
+GMAT CentaurRL10.K8 = 0;
+GMAT CentaurRL10.K9 = 0;
+GMAT CentaurRL10.K10 = 0;
+GMAT CentaurRL10.K11 = 0;
+GMAT CentaurRL10.K12 = 0;
+GMAT CentaurRL10.K13 = 0;
+GMAT CentaurRL10.K14 = 0;
+GMAT CentaurRL10.K15 = 0;
+GMAT CentaurRL10.K16 = 0;
+
+Create ChemicalThruster Voyager1PM;
+GMAT Voyager1PM.CoordinateSystem = Local;
+GMAT Voyager1PM.Origin = Earth;
+GMAT Voyager1PM.Axes = VNB;
+GMAT Voyager1PM.ThrustDirection1 = 1;
+GMAT Voyager1PM.ThrustDirection2 = 0;
+GMAT Voyager1PM.ThrustDirection3 = 0;
+GMAT Voyager1PM.DutyCycle = 1;
+GMAT Voyager1PM.ThrustScaleFactor = 1;
+GMAT Voyager1PM.DecrementMass = false;
+GMAT Voyager1PM.GravitationalAccel = 9.81;
+GMAT Voyager1PM.C1 = 10;
+GMAT Voyager1PM.C2 = 0;
+GMAT Voyager1PM.C3 = 0;
+GMAT Voyager1PM.C4 = 0;
+GMAT Voyager1PM.C5 = 0;
+GMAT Voyager1PM.C6 = 0;
+GMAT Voyager1PM.C7 = 0;
+GMAT Voyager1PM.C8 = 0;
+GMAT Voyager1PM.C9 = 0;
+GMAT Voyager1PM.C10 = 0;
+GMAT Voyager1PM.C11 = 0;
+GMAT Voyager1PM.C12 = 0;
+GMAT Voyager1PM.C13 = 0;
+GMAT Voyager1PM.C14 = 0;
+GMAT Voyager1PM.C15 = 0;
+GMAT Voyager1PM.C16 = 0;
+GMAT Voyager1PM.K1 = 300;
+GMAT Voyager1PM.K2 = 0;
+GMAT Voyager1PM.K3 = 0;
+GMAT Voyager1PM.K4 = 0;
+GMAT Voyager1PM.K5 = 0;
+GMAT Voyager1PM.K6 = 0;
+GMAT Voyager1PM.K7 = 0;
+GMAT Voyager1PM.K8 = 0;
+GMAT Voyager1PM.K9 = 0;
+GMAT Voyager1PM.K10 = 0;
+GMAT Voyager1PM.K11 = 0;
+GMAT Voyager1PM.K12 = 0;
+GMAT Voyager1PM.K13 = 0;
+GMAT Voyager1PM.K14 = 0;
+GMAT Voyager1PM.K15 = 0;
+GMAT Voyager1PM.K16 = 0;
+
+Create ChemicalTank CentaurTanks;
+GMAT CentaurTanks.AllowNegativeFuelMass = false;
+GMAT CentaurTanks.FuelMass = 756;
+GMAT CentaurTanks.Pressure = 1500;
+GMAT CentaurTanks.Temperature = 20;
+GMAT CentaurTanks.RefTemperature = 20;
+GMAT CentaurTanks.Volume = 0.75;
+GMAT CentaurTanks.FuelDensity = 1260;
+GMAT CentaurTanks.PressureModel = PressureRegulated;
+
+
+%----------------------------------------
+%---------- ForceModels
+%----------------------------------------
+
+Create ForceModel LowEarthProp_ForceModel;
+GMAT LowEarthProp_ForceModel.CentralBody = Earth;
+GMAT LowEarthProp_ForceModel.PrimaryBodies = {Earth};
+GMAT LowEarthProp_ForceModel.PointMasses = {Luna, Sun};
+GMAT LowEarthProp_ForceModel.SRP = On;
+GMAT LowEarthProp_ForceModel.RelativisticCorrection = Off;
+GMAT LowEarthProp_ForceModel.ErrorControl = RSSStep;
+GMAT LowEarthProp_ForceModel.GravityField.Earth.Degree = 10;
+GMAT LowEarthProp_ForceModel.GravityField.Earth.Order = 10;
+GMAT LowEarthProp_ForceModel.GravityField.Earth.StmLimit = 100;
+GMAT LowEarthProp_ForceModel.GravityField.Earth.PotentialFile = 'JGM2.cof';
+GMAT LowEarthProp_ForceModel.GravityField.Earth.TideModel = 'None';
+GMAT LowEarthProp_ForceModel.SRP.Flux = 1367;
+GMAT LowEarthProp_ForceModel.SRP.SRPModel = Spherical;
+GMAT LowEarthProp_ForceModel.SRP.Nominal_Sun = 149597870.691;
+GMAT LowEarthProp_ForceModel.Drag.AtmosphereModel = JacchiaRoberts;
+GMAT LowEarthProp_ForceModel.Drag.HistoricWeatherSource = 'ConstantFluxAndGeoMag';
+GMAT LowEarthProp_ForceModel.Drag.PredictedWeatherSource = 'ConstantFluxAndGeoMag';
+GMAT LowEarthProp_ForceModel.Drag.CSSISpaceWeatherFile = 'SpaceWeather-All-v1.2.txt';
+GMAT LowEarthProp_ForceModel.Drag.SchattenFile = 'SchattenPredict.txt';
+GMAT LowEarthProp_ForceModel.Drag.F107 = 150;
+GMAT LowEarthProp_ForceModel.Drag.F107A = 150;
+GMAT LowEarthProp_ForceModel.Drag.MagneticIndex = 3;
+GMAT LowEarthProp_ForceModel.Drag.SchattenErrorModel = 'Nominal';
+GMAT LowEarthProp_ForceModel.Drag.SchattenTimingModel = 'NominalCycle';
+GMAT LowEarthProp_ForceModel.Drag.DragModel = 'Spherical';
+
+%----------------------------------------
+%---------- Propagators
+%----------------------------------------
+
+Create Propagator LowEarthProp;
+GMAT LowEarthProp.FM = LowEarthProp_ForceModel;
+GMAT LowEarthProp.Type = RungeKutta89;
+GMAT LowEarthProp.InitialStepSize = 60;
+GMAT LowEarthProp.Accuracy = 9.999999999999999e-12;
+GMAT LowEarthProp.MinStep = 0.001;
+GMAT LowEarthProp.MaxStep = 2700;
+GMAT LowEarthProp.MaxStepAttempts = 50;
+GMAT LowEarthProp.StopIfAccuracyIsViolated = true;
+
+%----------------------------------------
+%---------- Burns
+%----------------------------------------
+
+Create FiniteBurn FiniteBurn1;
+GMAT FiniteBurn1.ThrottleLogicAlgorithm = 'MaxNumberOfThrusters';
+
+%----------------------------------------
+%---------- Subscribers
+%----------------------------------------
+
+Create OrbitView DefaultOrbitView;
+GMAT DefaultOrbitView.SolverIterations = Current;
+GMAT DefaultOrbitView.UpperLeft = [ 0.1458333333333333 0.04777594728171335 ];
+GMAT DefaultOrbitView.Size = [ 0.9940476190476191 0.9489291598023064 ];
+GMAT DefaultOrbitView.RelativeZOrder = 166;
+GMAT DefaultOrbitView.Maximized = true;
+GMAT DefaultOrbitView.Add = {Voyager1HorizonsCartesian, Voyager1CentaurPostMeco2, Earth};
+GMAT DefaultOrbitView.CoordinateSystem = EarthMJ2000Eq;
+GMAT DefaultOrbitView.DrawObject = [ true true true ];
+GMAT DefaultOrbitView.DataCollectFrequency = 1;
+GMAT DefaultOrbitView.UpdatePlotFrequency = 50;
+GMAT DefaultOrbitView.NumPointsToRedraw = 0;
+GMAT DefaultOrbitView.ShowPlot = true;
+GMAT DefaultOrbitView.MaxPlotPoints = 20000;
+GMAT DefaultOrbitView.ShowLabels = true;
+GMAT DefaultOrbitView.ViewPointReference = Earth;
+GMAT DefaultOrbitView.ViewPointVector = [ -60000 30000 20000 ];
+GMAT DefaultOrbitView.ViewDirection = Earth;
+GMAT DefaultOrbitView.ViewScaleFactor = 1;
+GMAT DefaultOrbitView.ViewUpCoordinateSystem = EarthMJ2000Eq;
+GMAT DefaultOrbitView.ViewUpAxis = Z;
+GMAT DefaultOrbitView.EclipticPlane = Off;
+GMAT DefaultOrbitView.XYPlane = Off;
+GMAT DefaultOrbitView.WireFrame = Off;
+GMAT DefaultOrbitView.Axes = On;
+GMAT DefaultOrbitView.Grid = Off;
+GMAT DefaultOrbitView.SunLine = Off;
+GMAT DefaultOrbitView.UseInitialView = On;
+GMAT DefaultOrbitView.StarCount = 7000;
+GMAT DefaultOrbitView.EnableStars = On;
+GMAT DefaultOrbitView.EnableConstellations = On;
+
+Create GroundTrackPlot DefaultGroundTrackPlot;
+GMAT DefaultGroundTrackPlot.SolverIterations = Current;
+GMAT DefaultGroundTrackPlot.UpperLeft = [ 0.1458333333333333 0.04777594728171335 ];
+GMAT DefaultGroundTrackPlot.Size = [ 0.9940476190476191 0.9489291598023064 ];
+GMAT DefaultGroundTrackPlot.RelativeZOrder = 169;
+GMAT DefaultGroundTrackPlot.Maximized = true;
+GMAT DefaultGroundTrackPlot.Add = {Voyager1HorizonsCartesian};
+GMAT DefaultGroundTrackPlot.DataCollectFrequency = 1;
+GMAT DefaultGroundTrackPlot.UpdatePlotFrequency = 50;
+GMAT DefaultGroundTrackPlot.NumPointsToRedraw = 0;
+GMAT DefaultGroundTrackPlot.ShowPlot = true;
+GMAT DefaultGroundTrackPlot.MaxPlotPoints = 20000;
+GMAT DefaultGroundTrackPlot.CentralBody = Earth;
+GMAT DefaultGroundTrackPlot.TextureMap = 'ModifiedBlueMarble.jpg';
+
+Create ReportFile ReportFile1;
+GMAT ReportFile1.SolverIterations = Current;
+GMAT ReportFile1.UpperLeft = [ 0 0 ];
+GMAT ReportFile1.Size = [ 0 0 ];
+GMAT ReportFile1.RelativeZOrder = 0;
+GMAT ReportFile1.Maximized = false;
+GMAT ReportFile1.Filename = 'ReportFile1.txt';
+GMAT ReportFile1.Precision = 16;
+GMAT ReportFile1.Add = {Voyager1HorizonsCartesian.A1ModJulian, Voyager1HorizonsCartesian.EarthMJ2000Eq.X};
+GMAT ReportFile1.WriteHeaders = true;
+GMAT ReportFile1.LeftJustify = On;
+GMAT ReportFile1.ZeroFill = Off;
+GMAT ReportFile1.FixedWidth = true;
+GMAT ReportFile1.Delimiter = ' ';
+GMAT ReportFile1.ColumnWidth = 23;
+GMAT ReportFile1.WriteReport = true;
+
+
+%----------------------------------------
+%---------- Mission Sequence
+%----------------------------------------
+
+BeginMissionSequence;
+Propagate BackProp LowEarthProp(Voyager1HorizonsCartesian) LowEarthProp(Voyager1CentaurPostMeco2) {Voyager1CentaurPostMeco2.Earth.Periapsis};
+Propagate LowEarthProp(Voyager1HorizonsCartesian) LowEarthProp(Voyager1CentaurPostMeco2) {Voyager1HorizonsCartesian.RMAG = 100000};
