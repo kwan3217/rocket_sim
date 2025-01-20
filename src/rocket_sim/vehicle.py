@@ -4,17 +4,23 @@ Vehicle model, including engines and stages.
 Created 2025-01-12
 """
 from copy import copy
+from dataclasses import dataclass
 from typing import Callable
 
 import numpy as np
 
-
+@dataclass
 class Stage:
     """
     Describes a rocket stage. This is an element of a rocket
     which has a constant dry mass, and a variable propellant mass
     """
-    def __init__(self,*,dry:float=None,prop:float=None,total:float=None):
+    dry_mass:float
+    prop_mass0:float
+    prop_mass:float
+    attached:bool
+    name:str=None
+    def __init__(self,*,dry:float=None,prop:float=None,total:float=None,name:str=None):
         """
 
         :param dry_mass: Mass of structure, attached engines, etc.
@@ -36,6 +42,7 @@ class Stage:
         self.prop_mass0=prop
         self.prop_mass=prop
         self.attached=True
+        self.name=name
     def mass(self):
         """
         Calculate the current mass of the stage
@@ -47,6 +54,7 @@ class Stage:
             self.prop_mass+=mdot*dt
 
 
+@dataclass
 class Engine:
     """
     Describes an engine. This is attached to a particular
@@ -61,17 +69,13 @@ class Engine:
     Usually connections are defined when the vehicle is instantiated
     and are not changed during the flight, even at a staging event.
     """
-    def __init__(self,thrust10:float,ve0:float):
-        """
-        :param thrust10: Nominal 100% thrust in vacuum. SI unit is N
-        :param ve0: Effective exhaust velocity in vacuum. SI unit is m/s
-        :param stage: Stage that we are drawing propellant from
-        """
-        self.thrust10=thrust10
-        self.ve0=ve0
-        self.attached=True
-        self.stage=None
-        self.throttle=1.0
+    thrust10:float
+    ve0:float
+    name:str|None=None
+    attached:bool = True
+    stage:Stage|None = None
+    throttle:float = 1.0
+    eff:float=1.0
     def connect_prop(self,stage:Stage):
         """
         Define the connection to a Stage that is carrying propellant for this engine
@@ -80,8 +84,8 @@ class Engine:
         self.stage=stage
     def generate_thrust(self,t:float,dt:float,y:np.ndarray,major_step:bool)->float:
         if self.attached and self.stage is not None and self.stage.attached:
-            thrust_mag=self.throttle*self.thrust10
-            mdot=-thrust_mag/self.ve0
+            thrust_mag=self.throttle*self.thrust10*self.eff
+            mdot=-thrust_mag/(self.ve0*self.eff)
             self.stage.change_mass(dt=dt,major_step=major_step,mdot=mdot)
         else:
             thrust_mag=0
