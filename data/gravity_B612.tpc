@@ -1,6 +1,14 @@
+KPL/PCK
 Gravity field of imaginary world B612, used as a test case in tests/test_rocket_sim/test_gravity.py
-We use the asteroid number 0xB612=46610 and the normal Spice convention for asteroids, which is 2
+We use the asteroid number 0xB612=46610 and the normal Spice convention for asteroids, which is 20
 million plus the asteroid number.
+
+B612 is designed to have a circular orbit of 100m circumference, with an orbital speed of 1m/s.
+
+This object has a mass of about 238 billion tons, and a density of about 5.69e7 kg/m**3. The mass
+isn't spectacular -- it's not even 0.1% of Deimos. The density however is up there at about 57,000
+times water, up at the lower end of density estimates for white dwarf matter. The surface gravity
+is about 1.62% of a g -- detectable but not walkable. Sorry, little prince!
 \begindata
 BODY20046610_GM=15.915494309189533e-9
 BODY20046610_RADII=(0.01 0.01 0.01)

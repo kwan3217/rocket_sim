@@ -59,9 +59,9 @@ conditions.
 - **Phase 3 - Trajectory Optimization**:
   - Use optimization libraries like `scipy.optimize` for tuning
     initial conditions or guidance parameters to match historical data
-    or specific mission requirements.
+    or specific mission requirements. Complete!
   - Implement reverse time integration for trajectory reconstruction,
-    starting from known final states (e.g., from SPICE kernels).
+    starting from known final states (e.g., from SPICE kernels). Complete!
 
 ## Road map
 Current MVP achieved are:
@@ -74,17 +74,17 @@ Current MVP achieved are:
   and known post-PM orbit.
 - Orbital simulation includes basic two-body, J2 of central body, and third-body
   perturbations.
+* Integration with `scipy.optimize.minimize` to tune PM maneuver to better hit
+  the partially-documented pre-PM orbit. Completed!
+* Export Spice kernels for import to Cosmographia. Completed!
 
 Next MVP(s):
-* Integration with `scipy.optimize.minimize` to tune PM maneuver to better hit
-  the partially-documented pre-PM orbit
-* De-boost through Centaur burn 2 to get to parking orbit
+* De-boost through Centaur burn 2 to get to parking orbit.
 * Implement the rest of the Titan-Centaur 3E vehicle
 * Implement drag
 * Import the Powered Explicit Guidance maneuver
 * Import the documented stage 0 pitch program
 * Detailed thrust profiles for solid and liquid engines.
-* Export Spice kernels
 * Export POV and/or Blender to visualize the results
 * Extend to 6DoF, including rotational dynamics and kinematics, moments of inertia,
   and steering by actuators (like RCS, engine gimbal, control surface, etc) instead

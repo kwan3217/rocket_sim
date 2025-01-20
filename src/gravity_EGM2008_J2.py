@@ -77,7 +77,8 @@ b_wgs84=a_wgs84*(1-f_wgs84)
 omega_wgs84=7.292115e-5 # rad/s, equation 3-5
 
 def main():
-    with open("data/gravity_EGM2008_J2.tpc","wt") as ouf:
+    with open("products/gravity_EGM2008_J2.tpc","wt") as ouf:
+        print("KPL/PCK",file=ouf)
         with open("src/gravity_EGM2008_J2.py","rt") as inf:
             for line in inf:
                 print(line,file=ouf,end='')
@@ -90,7 +91,7 @@ def main():
         print(r"\begintext",file=ouf)
         print('"""',file=ouf)
     # Now test that we can furnsh the file we just generated:
-    furnsh("data/gravity_EGM2008_J2.tpc")
+    furnsh("products/gravity_EGM2008_J2.tpc")
     print(gdpool("BODY399_RADII",0,3))
     print(gdpool("BODY399_GM",0,1)[0])
     print(gdpool("BODY399_J2",0,1)[0])
