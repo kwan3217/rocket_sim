@@ -1,3 +1,4 @@
+KPL/PCK
 """
 Create a text planetary constant kernel from WGS-84 and EGM2008. This program
 quines itself into the header of the kernel it generates, for maximum documentation.
