@@ -278,7 +278,7 @@ def init_spice():
     furnsh("data/naif0012.tls")
     furnsh("data/pck00011.tpc")  # Sizes and orientations of all planets including Earth
     furnsh("data/gm_de440.tpc")  # Masses of all planets and many satellites, including Earth
-    furnsh("data/gravity_EGM2008_J2.tpc") # Cover up Earth mass from gm_de440.tpc and size from pck00011.tpc
+    furnsh("products/gravity_EGM2008_J2.tpc") # Cover up Earth mass from gm_de440.tpc and size from pck00011.tpc
     furnsh("data/de440.bsp")     # Solar system ephemeris
     global EarthGM,EarthRe
     EarthGM = gdpool("BODY399_GM", 0, 1)[0] * 1000 ** 3

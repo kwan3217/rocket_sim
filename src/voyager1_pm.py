@@ -132,7 +132,7 @@ def opt_interface_pm_burn(target:np.ndarray=None,verbose:bool=False, fps:int=100
     return cost
 
 
-def target(export:bool=False):
+def target(export:bool=False,optimize:bool=False):
     # Parameters are:
     #   0 - dpitch, pitch angle between pure prograde and target in degrees
     #   1 - dyaw, yaw angle between pure in-plane and target in degrees
@@ -157,7 +157,7 @@ def target(export:bool=False):
     bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(0,0)]  # Freeze yaw rate at 0
     #initial_guess = [-1.438, 13.801, +0.00599, -0.549]  # From previous four-parameter form
     #bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(-1,1)]  # Bounds on
-    if True:
+    if optimize:
         result = minimize(opt_interface_pm_burn, initial_guess, method='L-BFGS-B', options={'ftol':1e-12,'gtol':1e-12,'disp':True}, bounds=bounds)
         print("Achieved cost:", result.fun)
         final_guess=result.x
@@ -183,7 +183,7 @@ def target(export:bool=False):
             except IndexError:
                 break
             i+=di
-        mkspk(oufn=f'data/vgr{vgr1.vgr_id}_pm.bsp',
+        mkspk(oufn=f'products/vgr{vgr1.vgr_id}_pm.bsp',
               fmt=['f', '.3f', '.3f', '.3f', '.6f', '.6f', '.6f'],
               data=decimated_states,
               input_data_type='STATES',
@@ -240,7 +240,7 @@ def export():
             jdtdb,deltat,rx,ry,rz,vx,vy,vz,lt,r,rr=[float(x) for x in (jdtdb,deltat,rx,ry,rz,vx,vy,vz,lt,r,rr)]
             et=str2et(gregoriantdb+" TDB")
             states.append([et,rx,ry,rz,vx,vy,vz])
-    mkspk(oufn=f'data/vgr1_horizons_vectors.bsp',
+    mkspk(oufn=f'products/vgr1_horizons_vectors.bsp',
           fmt='f',
           data=states,
           input_data_type='STATES',
@@ -276,8 +276,8 @@ def main():
     init_spice()
     #vgr1 = Voyager(vgr_id=1)
     #vgr2 = Voyager(vgr_id=2)
-    target()
-    #export()
+    target(export=True)
+    export()
 
 
 
