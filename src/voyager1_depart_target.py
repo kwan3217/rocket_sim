@@ -387,9 +387,11 @@ def target_centaur2(*,simt1:float,y1:np.ndarray,export:bool=False, fps1:int=10,f
     #       +0.1 is 110%, -0.1 is 90%, etc. This value changes thrust10 and ve
     #       simultaneously so as to not affect mdot, so the propellant
     #       will drain exactly as fast as before.
-    #initial_guess=np.zeros(3)
+    #initial_guess=np.zeros(4)
     #                dpitch               dyaw                   dthr                pitchrate
-    initial_guess=[-4.4164552842503e+00,-4.3590393660760e-02,-9.6115297747416e-03,4.8457186584881e-03]
+    #initial_guess=[-4.4164552842503e+00,-4.3590393660760e-02,-9.6115297747416e-03,4.8457186584881e-03] #Best Voyager 1 result
+    initial_guess=[                0e+00, 1.0e+1                 ,0.0                   ,0.0 ] #Initial Voyager 2 guess
+
     bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(-1,1)]  # Freeze yaw rate at 0
     if optimize:
         result = minimize(lambda params:opt_interface_centaur2(params,simt1=simt1,y1=y1,fps1=fps1,fps0=fps0,vgr_id=vgr_id,verbose=True), initial_guess,
