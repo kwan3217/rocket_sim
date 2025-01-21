@@ -311,10 +311,14 @@ def target_pm(export:bool=False, optimize:bool=False, vgr_id:int=1):
     #               -0.13110923799828175,
     #               -0.0017211606889325382,
     #                0.0] # Best known three-parameter fit for three targets
-    initial_guess=[float.fromhex("-0x1.72dc4a7dd46d7p+0"),
-                   float.fromhex("-0x1.0c7d88ec0dcfdp-3"),
-                   float.fromhex("-0x1.67f69c84a6779p-9"),
-                   0.0] # Best known three-parameter fit at 100Hz
+    #initial_guess=[float.fromhex("-0x1.72dc4a7dd46d7p+0"),
+    #               float.fromhex("-0x1.0c7d88ec0dcfdp-3"),
+    #               float.fromhex("-0x1.67f69c84a6779p-9"),
+    #               0.0] # Best known Voyager 1 three-parameter fit at 100Hz
+    initial_guess=[float.fromhex("-0x1.38f7f9ecab77ap+0"),
+                   float.fromhex("-0x1.1a5fdb187dc17p-1"),
+                   float.fromhex("-0x1.132db98957525p-8"),
+                   0.0] # Best known Voyager 2 three-parameter fit at 100Hz
     bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(0,0)]  # Freeze yaw rate at 0
     #initial_guess = [-1.438, 13.801, +0.00599, -0.549]  # From previous four-parameter form
     #bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(-1,1)]  # Bounds on
@@ -325,6 +329,7 @@ def target_pm(export:bool=False, optimize:bool=False, vgr_id:int=1):
                           options={'ftol':1e-12,'gtol':1e-12,'disp':True},
                           bounds=bounds)
         print("Achieved cost:", result.fun)
+        print(result)
         final_guess=result.x
     else:
         final_guess=initial_guess

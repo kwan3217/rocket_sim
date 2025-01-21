@@ -335,6 +335,24 @@ Final state (simt, ICRF, SI):
                                vx:    8.1875867795104e+03  vy:    8.9161670584519e+03  vz:    4.5422888535830e+03
                                     0x1.ffb96372e96ecp+12       0x1.16a15622bddc9p+13       0x1.1be49f24ef458p+12
 """
+pm_solutions_str[2]="""Voyager 2 backpropagation through PM burn
+ dpitch: -1.2225338175589e+00 (-0x1.38f7f9ecab6aap+0)
+ dthr: -4.1988923976743e-03 (-0x1.132db98705ebdp-8)
+ dyaw: -5.5151257204035e-01 (-0x1.1a5fdb187e056p-1)
+ yawrate: 0.0000000000000e+00 (0x0.0p+0)
+ fps: 100 
+ Initial state (simt, ICRF, SI): 
+  simt=0 in ET: -7.0579256756118e+08  (-0x1.508c51bc7d4dap+29) (1977-08-20T14:30:32.438 TDB,1977-08-20T14:29:44.256Z)
+  simt:   3.7797441831827e+03  rx:    7.5134383545304e+06  ry:   -1.3110472104682e+06  rz:    2.0893893198094e+06
+        0x1.d877d05940000p+11       0x1.ca95796b0a031p+22      -0x1.4014735e13e1ep+20      0x1.fe1ad51df07c0p+20
+                               vx:    5.9205250587370e+03  vy:    8.8788614501394e+03  vz:    9.4617661353858e+03
+                                    0x1.720866a3fd7d2p+12       0x1.1576e43ff87dbp+13       0x1.27ae210b96d21p+13
+Final state (simt, ICRF, SI): 
+  simt:   3.5620441831827e+03  rx:    6.1733164958585e+06  ry:   -3.0265564102650e+06  rz:    1.7615473922352e+05
+        0x1.bd4169f2d999ap+11       0x1.78ca11fbc253bp+22      -0x1.7173e34839074p+21      0x1.580d5e9ee0532p+17
+                               vx:    6.6401840157381e+03  vy:    7.0938382526628e+03  vz:    8.3795263368295e+03
+                                    0x1.9f02f1ba7c933p+12       0x1.bb5d697b9fc83p+12       0x1.05dc35f015698p+13
+"""
 centaur2_solutions_str={}
 centaur2_solutions_str[1]="""Voyager 1 backpropagation through Centaur burn 2
  dpitch: -4.4164552842171e+00 (-0x1.1aa734107d5bdp+2)
