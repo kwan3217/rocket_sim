@@ -61,7 +61,7 @@ def sim_pm(*,dpitch:float=0.0, dthr:float=0.0, dyaw:float=0.0, yawrate:float=0.0
     # Propellant tank "starts" out empty and fills up as time runs backwards (but not mission module)
     sc.stages[sc.i_centaur].prop_mass=0
     sc.stages[sc.i_pm].prop_mass=0
-    sim.runto(t1=simt_track_prePM[1])
+    sim.runto(t1=simt_track_prePM[vgr_id])
     print("Final state (simt, ICRF, SI): ")
     print(f"  simt:  {sc.tlm[-1].t: .13e}  rx:   {sc.tlm[-1].y[0]: .13e}  ry:   {sc.tlm[-1].y[1]: .13e}  rz:   {sc.tlm[-1].y[2]: .13e}")
     print(f"        {sc.tlm[-1].t.hex()}       {  sc.tlm[-1].y[0].hex()}      {  sc.tlm[-1].y[1].hex()}      {  sc.tlm[-1].y[2].hex()}")
@@ -247,7 +247,8 @@ def opt_interface_centaur2(target:np.ndarray=None,*,simt1:float,y1:np.ndarray,ve
              This is zero if the target is hit, and greater than zero for any miss.
     """
     dpitch, dyaw, dthr, pitchrate = target
-    sc = sim_centaur2(simt1=simt1,y1=y1,dpitch=dpitch, dthr=dthr, dyaw=dyaw, pitchrate=pitchrate, fps1=fps1, fps0=fps0, verbose=verbose, vgr_id=vgr_id)
+    sc = sim_centaur2(simt1=simt1,y1=y1,dpitch=dpitch, dthr=dthr, dyaw=dyaw, pitchrate=pitchrate,
+                      fps1=fps1, fps0=fps0, verbose=verbose, vgr_id=vgr_id)
     y0_j = sc.y.copy()
     Mej = pxform('J2000', 'IAU_EARTH', simt_track_park[vgr_id] + voyager_et0[vgr_id])
     r0_j = y0_j[:3].reshape(-1, 1)  # Position vector reshaped to column vector for matrix multiplication
@@ -298,14 +299,18 @@ def target_pm(export:bool=False, optimize:bool=False, vgr_id:int=1):
     #initial_guess = [-1.438, 13.801, +0.00599, -0.549]  # From previous four-parameter form
     #bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(-1,1)]  # Bounds on
     if optimize:
-        result = minimize(opt_interface_pm_burn, initial_guess, method='L-BFGS-B', options={'ftol':1e-12,'gtol':1e-12,'disp':True}, bounds=bounds)
+        result = minimize(lambda x:opt_interface_pm_burn(x,vgr_id=vgr_id),
+                          initial_guess,
+                          method='L-BFGS-B',
+                          options={'ftol':1e-12,'gtol':1e-12,'disp':True},
+                          bounds=bounds)
         print("Achieved cost:", result.fun)
         final_guess=result.x
     else:
         final_guess=initial_guess
     print("Optimal parameters:", final_guess)
     print("Optimal run: ")
-    sc=sim_pm(**{k:v for k,v in zip(('dpitch','dyaw','dthr','yawrate'),final_guess)},verbose=True)
+    sc=sim_pm(**{k:v for k,v in zip(('dpitch','dyaw','dthr','yawrate'),final_guess)},verbose=True,vgr_id=vgr_id)
     if export:
         states=sorted([np.hstack((np.array(x.t),x.y)) for x in sc.tlm], key=lambda x:x[0])
         decimated_states=[]
@@ -362,7 +367,7 @@ def target_centaur2(*,simt1:float,y1:np.ndarray,export:bool=False, fps1:int=10,f
     initial_guess=[-4.4164552842503e+00,-4.3590393660760e-02,-9.6115297747416e-03,4.8457186584881e-03]
     bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(-1,1)]  # Freeze yaw rate at 0
     if optimize:
-        result = minimize(lambda params:opt_interface_centaur2(params,simt1=simt1,y1=y1,fps1=fps1,fps0=fps0), initial_guess,
+        result = minimize(lambda params:opt_interface_centaur2(params,simt1=simt1,y1=y1,fps1=fps1,fps0=fps0,vgr_id=vgr_id,verbose=True), initial_guess,
                           method='L-BFGS-B', options={'ftol':1e-12,'gtol':1e-12,'disp':True}, bounds=bounds)
         print("Achieved cost:", result.fun)
         final_guess=result.x
@@ -370,7 +375,7 @@ def target_centaur2(*,simt1:float,y1:np.ndarray,export:bool=False, fps1:int=10,f
         final_guess=initial_guess
     print("Optimal parameters:", final_guess)
     print("Optimal run: ")
-    sc=sim_centaur2(simt1=simt1,y1=y1,**{k:v for k,v in zip(('dpitch','dyaw','dthr','pitchrate'),final_guess)},fps1=fps1,fps0=fps0,verbose=True)
+    sc=sim_centaur2(simt1=simt1,y1=y1,**{k:v for k,v in zip(('dpitch','dyaw','dthr','pitchrate'),final_guess)},fps1=fps1,fps0=fps0,verbose=True,vgr_id=vgr_id)
     if export:
         states=sorted([np.hstack((np.array(x.t),x.y)) for x in sc.tlm], key=lambda x:x[0])
         decimated_states=[]
@@ -414,8 +419,8 @@ def target_centaur2(*,simt1:float,y1:np.ndarray,export:bool=False, fps1:int=10,f
     return sc
 
 
-def export():
-    with open("data/vgr1/v1_horizons_vectors_1s.txt","rt") as inf:
+def export(vgr_id:int):
+    with open(f"data/vgr{vgr_id}/v{vgr_id}_horizons_vectors_1s.txt","rt") as inf:
         states=[]
         for line in inf:
             line=line.strip()
@@ -430,7 +435,7 @@ def export():
             et=str2et(gregoriantdb+" TDB")
             states.append([et,rx,ry,rz,vx,vy,vz])
     gtdb_last_1s=gregoriantdb
-    with open("data/vgr1/v1_horizons_vectors.txt","rt") as inf:
+    with open(f"data/vgr{vgr_id}/v{vgr_id}_horizons_vectors.txt","rt") as inf:
         states=[]
         for line in inf:
             line=line.strip()
@@ -446,7 +451,7 @@ def export():
             jdtdb,deltat,rx,ry,rz,vx,vy,vz,lt,r,rr=[float(x) for x in (jdtdb,deltat,rx,ry,rz,vx,vy,vz,lt,r,rr)]
             et=str2et(gregoriantdb+" TDB")
             states.append([et,rx,ry,rz,vx,vy,vz])
-    mkspk(oufn=f'products/vgr1_horizons_vectors.bsp',
+    mkspk(oufn=f'products/vgr{vgr_id}_horizons_vectors.bsp',
           fmt='f',
           data=states,
           input_data_type='STATES',
@@ -462,13 +467,13 @@ def export():
           data_delimiter=' ',
           leapseconds_file='data/naif0012.tls',
           pck_file='products/gravity_EGM2008_J2.tpc',
-          segment_id=f'VGR1_HORIZONS_1S',
+          segment_id=f'VGR{vgr_id}_HORIZONS_1S',
           time_wrapper='# ETSECONDS',
-          comment="""
+          comment=f"""
            Export of Horizons data calculated from a kernel they have but I don't,
-           Voyager_1_ST+refit2022_m. This file is at 1 second intervals from beginning
+           Voyager_{vgr_id}_ST+refit2022_m. This file is at 1 second intervals from beginning
            of available data to that time plus 1 hour, then at 1 minute intervals
-           to the end of 1977-09-05. From there we _do_ have a supertrajectory kernel
+           to the end of the launch day. From there we _do_ have a supertrajectory kernel
            that covers the rest of the mission. I have reason to believe that every
            supertrajectory that NAIF or SSD publishes has the same prime mission 
            segment, and just re-fit the interstellar mission portion, so I think the
@@ -480,12 +485,12 @@ def export():
 
 def main():
     init_spice()
-    #vgr1 = Voyager(vgr_id=1)
-    #vgr2 = Voyager(vgr_id=2)
-    pm=target_pm(export=True, optimize=True)
-    pm= voyager.parse_pm(voyager.pm_solutions_str[1])
-    target_centaur2(simt1=pm.simt0,y1=pm.y0,fps1=10, optimize=True, export=True)
-    export()
+    vgr_id=2
+    #pm=target_pm(export=True, optimize=True,vgr_id=vgr_id)
+    pm=voyager.parse_pm(voyager.pm_solutions_str[vgr_id])
+    target_centaur2(simt1=pm.simt0,y1=pm.y0,fps1=10, optimize=True, export=True,vgr_id=vgr_id)
+    for vgr_id in (1,2):
+        export(vgr_id)
 
 
 
