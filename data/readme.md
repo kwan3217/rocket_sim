@@ -1,7 +1,8 @@
 Files containing data extracted from various reports. The orignals
 of all of these are primary sources -- flight data reports, etc.
 
-* vgr1.bsp - From NAIF, originally called `Voyager_1.a52406u_V0.2_merged.bsp`
+## `vgr1.bsp`
+From NAIF, originally called `Voyager_1.a52406u_V0.2_merged.bsp`
 ```
 ; Voyager_1.ST+1991_a54418u.merged.bsp LOG FILE
 ; Created 2004-04-26/14:11:05.00.
@@ -47,3 +48,9 @@ tracking data on that kernel has the following note:
 ```
 Note that as of this writing, we have actually run off the end of the chosen
 kernel, but my interest is not related to the interstellar mission.
+
+## `TitanSRM start curve.dig`
+Trace of SRM 68 start transient from TC-6 (Voyager 1 launch vehicle)
+from figure 7-3, p54 of the TC-6 flight data report. Since the scale is
+in PSI Absolute, the chart has been manually edited such that the first
+point is t=0,P=14.7
