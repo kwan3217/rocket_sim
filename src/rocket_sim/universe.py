@@ -96,6 +96,10 @@ class Universe:
                 vehicle.y=y0.copy()
     def t(self):
         return self.t0+self.i_step/self.fps
+    def change_fps(self,new_fps:int):
+        self.t0=self.t()
+        self.i_step=0
+        self.fps=new_fps
     def step(self,direction:int=1):
         """
         "After all, it's a step in the right direction,

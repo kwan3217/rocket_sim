@@ -10,4 +10,4 @@ pck00011.tpc
 # Gravitational constants for DE440, https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/gm_de440.tpc
 gm_de440.tpc
 /naif0012.tls
-/vgr1_horizons_vectors.bsp
+/vgr1_st.bsp
