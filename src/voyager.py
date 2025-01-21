@@ -335,7 +335,31 @@ Final state (simt, ICRF, SI):
                                vx:    8.1875867795104e+03  vy:    8.9161670584519e+03  vz:    4.5422888535830e+03
                                     0x1.ffb96372e96ecp+12       0x1.16a15622bddc9p+13       0x1.1be49f24ef458p+12
 """
-
+centaur2_solutions_str={}
+centaur2_solutions_str[1]="""Voyager 1 backpropagation through Centaur burn 2
+ dpitch: -4.4164552842171e+00 (-0x1.1aa734107d5bdp+2)
+ dthr: -9.6115299246784e-03 (-0x1.3af35b58734eep-7)
+ dyaw: -4.3590393700061e-02 (-0x1.6517ae6b919f3p-5)
+ pitchrate: 4.8457188530925e-03 (0x1.3d91abffe89a4p-8)
+ fps during burn: 10 
+ fps during parking orbit: 1 
+ Initial state (simt, ICRF, SI): 
+  simt=0 in ET: -7.0441579085945e+08  (-0x1.4fe44176e027dp+29) (1977-09-05T12:56:49.140 TDB,1977-09-05T12:56:00.957Z)
+  simt:   3.6000324509525e+03  rx:    6.1670620991322e+06  ry:   -2.5491823405092e+06  rz:   -1.6001965204496e+06
+        0x1.c20109d6947aep+11       0x1.7868586582e92p+22      -0x1.372df2b95ce84p+21      -0x1.86ac4853c2edfp+20
+                               vx:    8.1875867795104e+03  vy:    8.9161670584519e+03  vz:    4.5422888535830e+03
+                                    0x1.ffb96372e96ecp+12       0x1.16a15622bddc9p+13       0x1.1be49f24ef458p+12
+State just prior to Centaur burn 2 (simt, ICRF, SI): 
+  simt:   3.1898324509525e+03  rx:    3.0090531901394e+06  ry:   -5.0533493988030e+06  rz:   -2.8456944924418e+06
+        0x1.8ebaa3702e148p+11       0x1.6f50e98567c9cp+21      -0x1.346e95985fcdfp+22      -0x1.5b5ff3f085542p+21
+                               vx:    6.9351764858879e+03  vy:    3.2685011881941e+03  vz:    1.5259224433481e+03
+                                    0x1.b172d2e2ddcecp+12       0x1.989009bbd2d90p+11       0x1.7d7b094fd32c8p+10
+State just after Centaur burn 1 (simt, ICRF, SI): 
+  simt:   5.9673245095253e+02  rx:   -3.2645531625213e+06  ry:    4.9345660010038e+06  rz:    2.7971187106339e+06
+        0x1.2a5dc0f3eb850p+9       -0x1.8e81494cd7f6ap+21       0x1.2d2e98010722ep+22       0x1.5571f5af60ce4p+21
+                               vx:   -6.7589049552103e+03  vy:   -3.5314790162879e+03  vz:   -1.6589917219292e+03
+                                   -0x1.a66e7ab25088fp+12      -0x1.b96f5419f75f7p+11      -0x1.9ebf785f412c1p+10
+"""
 parsed_pm=namedtuple("parsed_pm","vgr_id dpitch dthr dyaw yawrate fps et_t0 simt1 y1 simt0 y0")
 def parse_pm(pm_solution_str:str):
     """
