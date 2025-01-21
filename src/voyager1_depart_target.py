@@ -268,16 +268,27 @@ def opt_interface_centaur2(target:np.ndarray=None,*,simt1:float,y1:np.ndarray,ve
     # right ascension. It is relative to the Earth-fixed coordinates at this instant,
     # not the sky coordinates.
     elorb0 = elorb(r0_e, v0_e, l_DU=voyager.EarthRe, mu=voyager.EarthGM, t0=simt_track_prePM[vgr_id], deg=True)
-    da = (target_a_park[vgr_id] - elorb0.a) / voyager.EarthRe  # Use Earth radius to weight da
+    # Put each error into the units of the historical report
+    da = (target_a_park[vgr_id] - elorb0.a) / 1852  # Use nautical miles to match significant figures
     de = (target_e_park[vgr_id] - elorb0.e)
-    di = np.deg2rad(target_i_park[vgr_id] - elorb0.i)
-    cost = (da ** 2 + 50*de ** 2 + di ** 2)*1e3
+    di = (target_i_park[vgr_id] - elorb0.i)
+    # Divide each difference by estimated uncertainty of historical parameter. It might
+    # be the size of the least significant digit, or might be guided by estimated
+    # accuracy indicated by spread in different measurements. In any case, 1.0 means
+    # different by about the estimated uncertainty. The cost then is the sum of squares
+    # of each parameter difference normalized by this spread. This very nearly matches
+    # the chi-square measure of fit in curve fitting, which is in a sense what we are
+    # doing here.
+    sa=2e-1 #difference between Antigua and Guidance measurement
+    se=0.00007 #likewise
+    si=0.01 # likewise
+    # So the cost is the sum of squares of each difference
+    # expressed as multiples of the uncertainty
+    cost = ((da/sa) ** 2 + (de/se) ** 2 + (di/si)** 2)
     print(f"{dyaw=} deg, {dpitch=} deg, {dthr=}")
-    print(f"   {da=} Earth radii")
-    print(f"      ({da * voyager.EarthRe} m)")
-    print(f"   {de=}")
-    print(f"   {di=} rad")
-    print(f"      ({np.rad2deg(di)} deg)")
+    print(f"   ahist={target_a_park[vgr_id]/1852:.2f} nmi, acalc={elorb0.a/1852:.2f} nmi, {da=:.2f} nmi, {da/sa:8.1f} sigma")
+    print(f"   ehist={target_e_park[vgr_id]:.6f},    ecalc={elorb0.e:.6f},    {de=:.6f},  {de/se:8.1f} sigma")
+    print(f"   ihist={target_i_park[vgr_id]:.4f} deg, icalc={elorb0.i:.4f} deg, {di=:.4f} deg, {di/si:8.1f} sigma")
     print(f"Cost: {cost}")
     return cost
 
