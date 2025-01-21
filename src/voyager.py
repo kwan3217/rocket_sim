@@ -290,18 +290,18 @@ horizons_data={1:[2443392.083615544,  # JDTDB
                   6.653052526114903E+00]} # RR km/s
 # Following is from TC-6 flight data report table 4-3, Guidance Telemetry, so what Centaur
 # thought it hit. Best guess is that this is in something like true of date equatorial frame.
-simt_track_prePM = {1:3600.03} # Time of post-MECO2 (after Centaur burn but before PM burn) target
-target_a_prePM = {1: -4220.43 * 1852}  # Initial coefficient is nautical miles, convert to meters
-target_e_prePM = {1:1.84171}
-target_i_prePM = {1:28.5165} # degrees
-target_lan_prePM = {1:170.237} # degrees
+simt_track_prePM = {1:3600.03,2:3562.04} # Time of post-MECO2 (after Centaur burn but before PM burn) target
+target_a_prePM = {1: -4220.43 * 1852,2:-4417.83*1852}  # Initial coefficient is nautical miles, convert to meters
+target_e_prePM = {1:1.84171,2:1.80349}
+target_i_prePM = {1:28.5165,2:41.7475} # degrees
+target_lan_prePM = {1:170.237,2:130.9302} # degrees
 # Following is from TC-6 flight data report table 4-2, Guidance Telemetry, so what Centaur
 # thought it hit. This is the parking orbit just after Centaur burn 1 cutoff.
-simt_track_park={1:596.03}     # Time of cutoff for Voyager 1 was 594.0, so about 2s before track point
-target_a_park={1:3533.81*1852}
-target_e_park={1:0.000038}
-target_i_park={1:28.5201}
-target_c3_park={1:-60.90520} # km**2/s**2, not actually a target value, completely determined from a above.
+simt_track_park={1:596.03,2:586.04}     # Time of cutoff for Voyager 1 was 594.0, so about 2s before track point
+target_a_park={1:3533.81*1852,2:3553.91*1852}
+target_e_park={1:0.000038,2:0.000010}
+target_i_park={1:28.5201,2:37.3625}
+target_c3_park={1:-60.90520,2:-60.9036} # km**2/s**2, not actually a target value, completely determined from a above.
 # These are the millisecond-precision timestamps of the
 # ignition of the SRBs on each launch vehicle, and represent the
 # official T=0 for all of the timelines in the flight data reports.
