@@ -1,0 +1,43 @@
+{
+   "version": "1.0",
+   "name": "Voyager 1",
+   "items": [
+      {
+         "name": "Voyager 1",
+         "startTime": "1977-09-05 13:05:57.690 UTC",
+         "center": "Earth",
+         "trajectory": {
+            "type": "Spice",
+            "target": "Voyager 1",
+            "center": "Earth"
+         },
+         "geometry": {
+            "type": "Mesh",
+            "meshRotation": [
+               0.70710677,
+               -0.70710677,
+               0,
+               0
+            ],
+            "size": 0.008,
+            "source": "voyager.cmod"
+         },
+         "label": {
+            "color": [
+               1,
+               0,
+               0
+            ]
+         },
+         "trajectoryPlot": {
+            "color": [
+               1,
+               0,
+               0
+            ],
+            "duration": "1 y",
+            "fade": 10
+         }
+      }
+   ]
+}
