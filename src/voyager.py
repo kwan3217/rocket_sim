@@ -3,12 +3,13 @@ Describe purpose of this script here
 
 Created: 1/19/25
 """
+import re
+from collections import namedtuple
 from dataclasses import dataclass
 from math import isclose
 from typing import Callable
 
 import numpy as np
-from bmw import Elorb, elorb
 from kwanmath.geodesy import llr2xyz
 from kwanmath.vector import vnormalize, vcross, vdot
 from spiceypy import furnsh, gdpool, str2et
@@ -72,6 +73,7 @@ class Voyager(Vehicle):
         # Centaur residuals after burn 2, flight data report section p124 (V1) and p117 (V2)
         self.c_lox_resid=[None,276,374][vgr_id]*lb_kg_conv
         self.c_lh2_resid=[None, 36, 47][vgr_id]*lb_kg_conv
+        self.c_resid=self.c_lox_resid+self.c_lh2_resid
         # Calculated results below
         self.dt_cb={}
         self.mdot_eb={}
@@ -127,14 +129,18 @@ class Voyager(Vehicle):
             self.lox_depl_resid = (self.lox_t_depl - self.lh2_t_depl) * self.mdotlox_b[2]
             self.t_depl = self.lh2_t_depl
         # Now build the engines and stage. We actually give it 4 engines, since we have
-        # different stats for each burn.
-        self.centaur=Stage(dry=4400*lb_kg_conv,prop=self.c_mprop,name=f"Centaur D-1T {vgr_id+5}")
+        # different stats for each burn. Account the residual as part of the structure
+        # so that the "tank" is empty after the expected burns.
+        self.centaur=Stage(dry=4400*lb_kg_conv+self.c_resid,prop=self.c_mprop-self.c_resid,name=f"Centaur D-1T {vgr_id+5}")
         self.eb={eb:Engine(thrust10=thr,ve0=self.ve_eb[eb],name=f"Centaur RL-10 C-{eb[0]} for burn {eb[1]}") for eb,thr in self.thrust_eb.items()}
         super().__init__(stages=[self.centaur,self.pm,self.mm],
                          engines=[(self.pm_engine,1)]+[(engine,0) for eb,engine in self.eb.items()],
                          extras=[tlm])
         self.i_epm=0
         self.i_eb={1:(1,1),2:(1,2),3:(2,1),4:(2,2)}
+        self.i_centaur=0
+        self.i_pm=1
+        self.i_mm=2
     def sequence(self, *, t: float, y: np.ndarray, dt: float):
         # Sequence the PM engine
         if self.t_pm0 <= t < self.t_pm1:
@@ -206,6 +212,36 @@ def yaw_rate_guide(*,r0:np.ndarray,v0:np.ndarray,dpitch:float,dyaw:float,yawrate
     return inner
 
 
+def dprograde_guide(*,dpitch:float,dyaw:float,pitchrate:float,t0:float)->Callable[...,np.ndarray]:
+    """
+    Guidance program that applies a pitch and yaw to prograde guidance
+    :param dpitch:
+    :param dyaw:
+    :return: guidance routine which has the given pitch and yaw offset from
+             prograde in the instantaneous VNC frame
+    """
+    def inner(*,t:float,y:np.ndarray,dt:float,major_step:bool,vehicle:Vehicle):
+        # Can't pre-calculate because we want to use instantaneous prograde direction
+        # We are going to define our variation from prograde in the VNC frame:
+        # Figure these basis vectors as the appear in ICRF
+        rbar = vnormalize(y[:3].reshape(-1, 1))  # Just for checking purposes -- rbar is not a basis vector.
+        vbar = vnormalize(y[3:].reshape(-1, 1))
+        nbar = vnormalize(vcross(rbar, vbar))
+        cbar = vnormalize(vcross(vbar, nbar))
+        # Verify that cbar is roughly up
+        assert vdot(rbar, cbar) > 0, 'cbar is the wrong direction'
+        # So each column i of a matrix is where basis vector i of the
+        # from system lands in the to system. v is VNC frame, j is ICRF/J2000 frame
+        # This way, the vector <1,0,0> in VNC is prograde, the xy(vn) plane is equatorial
+        # and a "lon/lat" vector in this frame is a yaw=lon and pitch=lat deviation
+        # from prograde.
+        Mjv = np.hstack((vbar, nbar, cbar))
+        aim_v = llr2xyz(lon=dyaw, lat=dpitch+pitchrate*(t-t0), r=1, deg=True)
+        aim_j = Mjv @ aim_v
+        return aim_j.reshape(-1)
+    return inner
+
+
 def seq_guide(guides:dict[float,Callable[...,np.ndarray]]):
     """
     Create a guidance program that sequences a bunch of separate guidance programs
@@ -253,12 +289,19 @@ horizons_data={1:[2443392.083615544,  # JDTDB
                   7.907980047087768E+03,  # R  km
                   6.653052526114903E+00]} # RR km/s
 # Following is from TC-6 flight data report table 4-3, Guidance Telemetry, so what Centaur
-# thought it hit.
-sim_t0 = {1:3600.03} # Time of post-MECO2 (after Centaur burn but before PM burn) target
-target_a = {1:-4220.43 * 1852}  # Initial coefficient is nautical miles, convert to meters
-target_e = {1:1.84171}
-target_i = {1:28.5165} # degrees
-target_lan = {1:170.237} # degrees
+# thought it hit. Best guess is that this is in something like true of date equatorial frame.
+simt_track_prePM = {1:3600.03} # Time of post-MECO2 (after Centaur burn but before PM burn) target
+target_a_prePM = {1: -4220.43 * 1852}  # Initial coefficient is nautical miles, convert to meters
+target_e_prePM = {1:1.84171}
+target_i_prePM = {1:28.5165} # degrees
+target_lan_prePM = {1:170.237} # degrees
+# Following is from TC-6 flight data report table 4-2, Guidance Telemetry, so what Centaur
+# thought it hit. This is the parking orbit just after Centaur burn 1 cutoff.
+simt_track_park={1:596.03}     # Time of cutoff for Voyager 1 was 594.0, so about 2s before track point
+target_a_park={1:3533.81*1852}
+target_e_park={1:0.000038}
+target_i_park={1:28.5201}
+target_c3_park={1:-60.90520} # km**2/s**2, not actually a target value, completely determined from a above.
 # These are the millisecond-precision timestamps of the
 # ignition of the SRBs on each launch vehicle, and represent the
 # official T=0 for all of the timelines in the flight data reports.
@@ -271,6 +314,142 @@ EarthRe=None
 horizons_et={}
 # These hold the Spice ET of the official T=0 for each mission
 voyager_et0={}
+
+# Solutions from runs of voyager1_pm.target()
+pm_solutions_str={}
+pm_solutions_str[1]="""Voyager 1 backpropagation through PM burn
+ dpitch: -1.4486738736345e+00 (-0x1.72dc4a7dd46d7p+0)
+ dthr: -2.7463022291387e-03 (-0x1.67f69c84a6779p-9)
+ dyaw: -1.3109881372814e-01 (-0x1.0c7d88ec0dcfdp-3)
+ yawrate: 0.0000000000000e+00 (0x0.0p+0)
+ fps: 100 
+ Initial state (simt, ICRF, SI): 
+  simt=0 in ET: -7.0441579085945e+08  (-0x1.4fe44176e027dp+29) (1977-09-05T12:56:49.140 TDB,1977-09-05T12:56:00.957Z)
+  simt:   3.8152424509525e+03  rx:    7.8270056974723e+06  ry:   -4.7697578535259e+05  rz:   -5.3623021101710e+05
+        0x1.dce7c22880000p+11       0x1.ddb8f6ca362ecp+22      -0x1.d1cbf243377d8p+18      -0x1.05d4c6c0a6ef9p+19
+                               vx:    7.6604530261200e+03  vy:    1.0808671548372e+04  vz:    5.5813798253055e+03
+                                    0x1.dec73f9851185p+12       0x1.51c55f54c0b63p+13       0x1.5cd613c3b317dp+12
+Final state (simt, ICRF, SI): 
+  simt:   3.6000324509525e+03  rx:    6.1670620991322e+06  ry:   -2.5491823405092e+06  rz:   -1.6001965204496e+06
+        0x1.c20109d6947aep+11       0x1.7868586582e92p+22      -0x1.372df2b95ce84p+21      -0x1.86ac4853c2edfp+20
+                               vx:    8.1875867795104e+03  vy:    8.9161670584519e+03  vz:    4.5422888535830e+03
+                                    0x1.ffb96372e96ecp+12       0x1.16a15622bddc9p+13       0x1.1be49f24ef458p+12
+"""
+
+parsed_pm=namedtuple("parsed_pm","vgr_id dpitch dthr dyaw yawrate fps et_t0 simt1 y1 simt0 y0")
+def parse_pm(pm_solution_str:str):
+    """
+
+    :param pm_solution_str:
+    :return:
+    """
+    lines=[x.strip() for x in pm_solution_str.split("\n")]
+    if match:=re.match(r"Voyager (?P<vgr_id>\d+) backpropagation through PM burn",lines[0]):
+        vgr_id=match.group("vgr_id")
+    else:
+        raise ValueError("Couldn't parse vgr_id")
+    def parse_steer_param(steer_param:str,line:str):
+        if match:=re.match(fr"{steer_param}:\s+(?P<decval>[-+]?[0-9].[0-9]+e[-+][0-9]+)\s+\((?P<hexval>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)\)",line):
+            decval=float(match.group("decval"))
+            hexval=float.fromhex(match.group("hexval"))
+            if not isclose(decval,hexval):
+                raise ValueError(f"{steer_param} dec and hex don't match")
+        else:
+            raise ValueError(f"Couldn't parse {steer_param}")
+        return hexval
+    dpitch=parse_steer_param("dpitch",lines[1])
+    dthr=parse_steer_param("dthr",lines[2])
+    dyaw=parse_steer_param("dyaw",lines[3])
+    yawrate=parse_steer_param("yawrate",lines[4])
+    if match:=re.match(r"fps:\s+(?P<fps>\d+)",lines[5]):
+        fps=match.group("fps")
+    else:
+        raise ValueError("Couldn't parse fps")
+    if not lines[6]=="Initial state (simt, ICRF, SI):":
+        raise ValueError("Unexpected initial state header")
+    if match:=re.match("simt=0 in ET:\s+(?P<decval>[-+]?[0-9].[0-9]+e[-+][0-9]+)\s+"
+                       "\((?P<hexval>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)\)\s+"
+                       "\((?P<isotdb>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]+)\s+TDB,\s*"
+                         "(?P<isoutc>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]+)Z\)",lines[7]):
+        simt0_dec=float(match.group("decval"))
+        et_t0=float.fromhex(match.group("hexval"))
+        isotdb=match.group("isotdb")
+        isotdb=isotdb[:10]+' '+isotdb[11:]+" TDB"
+        isoutc=match.group("isoutc")+"Z"
+        if not isclose(simt0_dec, et_t0):
+            raise ValueError("simt0 dec and hex don't match")
+        if not isclose(et_t0,str2et(isotdb),abs_tol=1e-3):
+            raise ValueError(f"simt0 and Gregorian TDB don't match: {et_t0=}, {isotdb=} {str2et(isotdb)=}")
+        if not isclose(et_t0, str2et(isoutc), abs_tol=1e-3):
+            raise ValueError(f"simt0 and Gregorian UTC don't match: {et_t0=}, {isoutc=} {str2et(isoutc)=}")
+    else:
+        raise ValueError("Couldn't parse simt=0")
+    def parse_state(lines:list[str]):
+        if match:=re.match(r"simt:\s+(?P<simt_dec>[-+]?[0-9].[0-9]+e[-+][0-9]+)"
+                           r"\s+rx:\s+(?P<rx_dec>[-+]?[0-9].[0-9]+e[-+][0-9]+)"
+                           r"\s+ry:\s+(?P<ry_dec>[-+]?[0-9].[0-9]+e[-+][0-9]+)"
+                           r"\s+rz:\s+(?P<rz_dec>[-+]?[0-9].[0-9]+e[-+][0-9]+)",lines[0]):
+            simt_dec=float(match.group("simt_dec"))
+            rx_dec = float(match.group("rx_dec"))
+            ry_dec = float(match.group("ry_dec"))
+            rz_dec = float(match.group("rz_dec"))
+        else:
+            raise ValueError("Can't parse first line of state vector")
+        if match:=re.match(r"(?P<simt>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)"
+                           r"\s+(?P<rx>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)"
+                           r"\s+(?P<ry>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)"
+                           r"\s+(?P<rz>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)",lines[1]):
+            simt=float.fromhex(match.group("simt"))
+            rx = float.fromhex(match.group("rx"))
+            ry = float.fromhex(match.group("ry"))
+            rz = float.fromhex(match.group("rz"))
+            if not isclose(simt_dec,simt):
+                raise ValueError("Discrepancy in simt")
+            if not isclose(rx_dec, rx):
+                raise ValueError("Discrepancy in rx")
+            if not isclose(ry_dec, ry):
+                raise ValueError("Discrepancy in ry")
+            if not isclose(rz_dec, rz):
+                raise ValueError("Discrepancy in rz")
+        else:
+            raise ValueError("Can't parse second line of state vector")
+        if match:=re.match(r"vx:\s+(?P<vx_dec>[-+]?[0-9].[0-9]+e[-+][0-9]+)"
+                           r"\s+vy:\s+(?P<vy_dec>[-+]?[0-9].[0-9]+e[-+][0-9]+)"
+                           r"\s+vz:\s+(?P<vz_dec>[-+]?[0-9].[0-9]+e[-+][0-9]+)",lines[2]):
+            vx_dec = float(match.group("vx_dec"))
+            vy_dec = float(match.group("vy_dec"))
+            vz_dec = float(match.group("vz_dec"))
+        else:
+            raise ValueError("Can't parse third line of state vector")
+        if match:=re.match(r"(?P<vx>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)"
+                           r"\s+(?P<vy>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)"
+                           r"\s+(?P<vz>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)",lines[3]):
+            vx = float.fromhex(match.group("vx"))
+            vy = float.fromhex(match.group("vy"))
+            vz = float.fromhex(match.group("vz"))
+            if not isclose(vx_dec, vx):
+                raise ValueError("Discrepancy in vx")
+            if not isclose(vy_dec, vy):
+                raise ValueError("Discrepancy in vy")
+            if not isclose(vz_dec, vz):
+                raise ValueError("Discrepancy in vz")
+        else:
+            raise ValueError("Can't parse second line of state vector")
+        return simt,np.array((rx,ry,rz,vx,vy,vz))
+    simt1,y1=parse_state(lines[8:12])
+    if not lines[12]=="Final state (simt, ICRF, SI):":
+        raise ValueError("Unexpected final state header")
+    simt0,y0=parse_state(lines[13:])
+    result=parsed_pm(
+        vgr_id=vgr_id,
+        dpitch=dpitch,dthr=dthr,dyaw=dyaw,yawrate=yawrate,
+        fps=fps,
+        et_t0=et_t0,
+        simt1=simt1,y1=y1,
+        simt0=simt0,y0=y0
+    )
+    print(result)
+    return result
 
 
 def init_spice():
@@ -290,3 +469,12 @@ def init_spice():
         horizons_et[k]=str2et(f"{horizons_data[k][1]} TDB")
         # Launch timeline T0
         voyager_et0[k]=str2et(voyager_cal0[k])
+
+
+def main():
+    init_spice()
+    parse_pm(pm_solutions_str[1])
+
+
+if __name__=="__main__":
+    main()
