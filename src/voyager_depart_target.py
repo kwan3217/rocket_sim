@@ -61,7 +61,7 @@ def sim_pm(*,dpitch:float=0.0, dthr:float=0.0, dyaw:float=0.0, yawrate:float=0.0
     # Propellant tank "starts" out empty and fills up as time runs backwards (but not mission module)
     sc.stages[sc.i_centaur].prop_mass=0
     sc.stages[sc.i_pm].prop_mass=0
-    sim.runto(t1=simt_track_prePM[1])
+    sim.runto(t1=simt_track_prePM[vgr_id])
     print("Final state (simt, ICRF, SI): ")
     print(f"  simt:  {sc.tlm[-1].t: .13e}  rx:   {sc.tlm[-1].y[0]: .13e}  ry:   {sc.tlm[-1].y[1]: .13e}  rz:   {sc.tlm[-1].y[2]: .13e}")
     print(f"        {sc.tlm[-1].t.hex()}       {  sc.tlm[-1].y[0].hex()}      {  sc.tlm[-1].y[1].hex()}      {  sc.tlm[-1].y[2].hex()}")
@@ -162,21 +162,30 @@ def sim_centaur2(*,simt1:float,y1:np.ndarray,dpitch:float, dthr:float, dyaw:floa
         incs = np.array([np.rad2deg(elorb.i) for elorb in elorbs])
         smis = np.array([elorb.a for elorb in elorbs]) / 1852  # Display in nmi to match document
         c3s = -(voyager.EarthGM / (1000 ** 3)) / (np.array([elorb.a for elorb in elorbs]) / 1000)  # work directly in km
-        plt.figure("spd")
+        plt.figure(1)
+        plt.clf()
+        plt.subplot(2,3,1)
         plt.plot(ts, np.linalg.norm(states[:, 3:6], axis=1), label='spd')
-        plt.figure("ecc")
+        plt.title("spd")
+        plt.subplot(2,3,2)
         plt.plot(ts, eccs, label='e')
-        plt.figure("inc")
+        plt.title("e")
+        plt.subplot(2,3,3)
         plt.plot(ts, incs, label='i')
-        plt.figure("a")
+        plt.title("inc")
+        plt.subplot(2,3,4)
         plt.plot(ts, smis, label='a')
+        plt.title("a")
+        plt.ylim(-5000,5000)
         plt.ylabel('semi-major axis/nmi')
-        plt.figure("c3")
+        plt.subplot(2,3,5)
         plt.plot(ts, c3s, label='c3')
+        plt.title("c3")
         plt.ylabel('$C_3$/(km**2/s**2)')
-        plt.figure("mass")
+        plt.subplot(2,3,6)
         plt.plot(ts, masses, label='i')
-        plt.show()
+        plt.title("mass")
+        plt.pause(0.1)
     return sc
 
 
@@ -247,7 +256,8 @@ def opt_interface_centaur2(target:np.ndarray=None,*,simt1:float,y1:np.ndarray,ve
              This is zero if the target is hit, and greater than zero for any miss.
     """
     dpitch, dyaw, dthr, pitchrate = target
-    sc = sim_centaur2(simt1=simt1,y1=y1,dpitch=dpitch, dthr=dthr, dyaw=dyaw, pitchrate=pitchrate, fps1=fps1, fps0=fps0, verbose=verbose, vgr_id=vgr_id)
+    sc = sim_centaur2(simt1=simt1,y1=y1,dpitch=dpitch, dthr=dthr, dyaw=dyaw, pitchrate=pitchrate,
+                      fps1=fps1, fps0=fps0, verbose=verbose, vgr_id=vgr_id)
     y0_j = sc.y.copy()
     Mej = pxform('J2000', 'IAU_EARTH', simt_track_park[vgr_id] + voyager_et0[vgr_id])
     r0_j = y0_j[:3].reshape(-1, 1)  # Position vector reshaped to column vector for matrix multiplication
@@ -258,16 +268,27 @@ def opt_interface_centaur2(target:np.ndarray=None,*,simt1:float,y1:np.ndarray,ve
     # right ascension. It is relative to the Earth-fixed coordinates at this instant,
     # not the sky coordinates.
     elorb0 = elorb(r0_e, v0_e, l_DU=voyager.EarthRe, mu=voyager.EarthGM, t0=simt_track_prePM[vgr_id], deg=True)
-    da = (target_a_park[vgr_id] - elorb0.a) / voyager.EarthRe  # Use Earth radius to weight da
+    # Put each error into the units of the historical report
+    da = (target_a_park[vgr_id] - elorb0.a) / 1852  # Use nautical miles to match significant figures
     de = (target_e_park[vgr_id] - elorb0.e)
-    di = np.deg2rad(target_i_park[vgr_id] - elorb0.i)
-    cost = (da ** 2 + 50*de ** 2 + di ** 2)*1e3
+    di = (target_i_park[vgr_id] - elorb0.i)
+    # Divide each difference by estimated uncertainty of historical parameter. It might
+    # be the size of the least significant digit, or might be guided by estimated
+    # accuracy indicated by spread in different measurements. In any case, 1.0 means
+    # different by about the estimated uncertainty. The cost then is the sum of squares
+    # of each parameter difference normalized by this spread. This very nearly matches
+    # the chi-square measure of fit in curve fitting, which is in a sense what we are
+    # doing here.
+    sa=2e-1 #difference between Antigua and Guidance measurement
+    se=0.00007 #likewise
+    si=0.01 # likewise
+    # So the cost is the sum of squares of each difference
+    # expressed as multiples of the uncertainty
+    cost = ((da/sa) ** 2 + (de/se) ** 2 + (di/si)** 2)
     print(f"{dyaw=} deg, {dpitch=} deg, {dthr=}")
-    print(f"   {da=} Earth radii")
-    print(f"      ({da * voyager.EarthRe} m)")
-    print(f"   {de=}")
-    print(f"   {di=} rad")
-    print(f"      ({np.rad2deg(di)} deg)")
+    print(f"   ahist={target_a_park[vgr_id]/1852:.2f} nmi, acalc={elorb0.a/1852:.2f} nmi, {da=:.2f} nmi, {da/sa:8.1f} sigma")
+    print(f"   ehist={target_e_park[vgr_id]:.6f},    ecalc={elorb0.e:.6f},    {de=:.6f},  {de/se:8.1f} sigma")
+    print(f"   ihist={target_i_park[vgr_id]:.4f} deg, icalc={elorb0.i:.4f} deg, {di=:.4f} deg, {di/si:8.1f} sigma")
     print(f"Cost: {cost}")
     return cost
 
@@ -290,22 +311,31 @@ def target_pm(export:bool=False, optimize:bool=False, vgr_id:int=1):
     #               -0.13110923799828175,
     #               -0.0017211606889325382,
     #                0.0] # Best known three-parameter fit for three targets
-    initial_guess=[float.fromhex("-0x1.72dc4a7dd46d7p+0"),
-                   float.fromhex("-0x1.0c7d88ec0dcfdp-3"),
-                   float.fromhex("-0x1.67f69c84a6779p-9"),
-                   0.0] # Best known three-parameter fit at 100Hz
+    #initial_guess=[float.fromhex("-0x1.72dc4a7dd46d7p+0"),
+    #               float.fromhex("-0x1.0c7d88ec0dcfdp-3"),
+    #               float.fromhex("-0x1.67f69c84a6779p-9"),
+    #               0.0] # Best known Voyager 1 three-parameter fit at 100Hz
+    initial_guess=[float.fromhex("-0x1.38f7f9ecab77ap+0"),
+                   float.fromhex("-0x1.1a5fdb187dc17p-1"),
+                   float.fromhex("-0x1.132db98957525p-8"),
+                   0.0] # Best known Voyager 2 three-parameter fit at 100Hz
     bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(0,0)]  # Freeze yaw rate at 0
     #initial_guess = [-1.438, 13.801, +0.00599, -0.549]  # From previous four-parameter form
     #bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(-1,1)]  # Bounds on
     if optimize:
-        result = minimize(opt_interface_pm_burn, initial_guess, method='L-BFGS-B', options={'ftol':1e-12,'gtol':1e-12,'disp':True}, bounds=bounds)
+        result = minimize(lambda x:opt_interface_pm_burn(x,vgr_id=vgr_id),
+                          initial_guess,
+                          method='L-BFGS-B',
+                          options={'ftol':1e-12,'gtol':1e-12,'disp':True},
+                          bounds=bounds)
         print("Achieved cost:", result.fun)
+        print(result)
         final_guess=result.x
     else:
         final_guess=initial_guess
     print("Optimal parameters:", final_guess)
     print("Optimal run: ")
-    sc=sim_pm(**{k:v for k,v in zip(('dpitch','dyaw','dthr','yawrate'),final_guess)},verbose=True)
+    sc=sim_pm(**{k:v for k,v in zip(('dpitch','dyaw','dthr','yawrate'),final_guess)},verbose=True,vgr_id=vgr_id)
     if export:
         states=sorted([np.hstack((np.array(x.t),x.y)) for x in sc.tlm], key=lambda x:x[0])
         decimated_states=[]
@@ -357,12 +387,14 @@ def target_centaur2(*,simt1:float,y1:np.ndarray,export:bool=False, fps1:int=10,f
     #       +0.1 is 110%, -0.1 is 90%, etc. This value changes thrust10 and ve
     #       simultaneously so as to not affect mdot, so the propellant
     #       will drain exactly as fast as before.
-    #initial_guess=np.zeros(3)
+    #initial_guess=np.zeros(4)
     #                dpitch               dyaw                   dthr                pitchrate
-    initial_guess=[-4.4164552842503e+00,-4.3590393660760e-02,-9.6115297747416e-03,4.8457186584881e-03]
+    #initial_guess=[-4.4164552842503e+00,-4.3590393660760e-02,-9.6115297747416e-03,4.8457186584881e-03] #Best Voyager 1 result
+    initial_guess=[                0e+00, 1.0e+1                 ,0.0                   ,0.0 ] #Initial Voyager 2 guess
+
     bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(-1,1)]  # Freeze yaw rate at 0
     if optimize:
-        result = minimize(lambda params:opt_interface_centaur2(params,simt1=simt1,y1=y1,fps1=fps1,fps0=fps0), initial_guess,
+        result = minimize(lambda params:opt_interface_centaur2(params,simt1=simt1,y1=y1,fps1=fps1,fps0=fps0,vgr_id=vgr_id,verbose=True), initial_guess,
                           method='L-BFGS-B', options={'ftol':1e-12,'gtol':1e-12,'disp':True}, bounds=bounds)
         print("Achieved cost:", result.fun)
         final_guess=result.x
@@ -370,7 +402,7 @@ def target_centaur2(*,simt1:float,y1:np.ndarray,export:bool=False, fps1:int=10,f
         final_guess=initial_guess
     print("Optimal parameters:", final_guess)
     print("Optimal run: ")
-    sc=sim_centaur2(simt1=simt1,y1=y1,**{k:v for k,v in zip(('dpitch','dyaw','dthr','pitchrate'),final_guess)},fps1=fps1,fps0=fps0,verbose=True)
+    sc=sim_centaur2(simt1=simt1,y1=y1,**{k:v for k,v in zip(('dpitch','dyaw','dthr','pitchrate'),final_guess)},fps1=fps1,fps0=fps0,verbose=True,vgr_id=vgr_id)
     if export:
         states=sorted([np.hstack((np.array(x.t),x.y)) for x in sc.tlm], key=lambda x:x[0])
         decimated_states=[]
@@ -414,8 +446,8 @@ def target_centaur2(*,simt1:float,y1:np.ndarray,export:bool=False, fps1:int=10,f
     return sc
 
 
-def export():
-    with open("data/vgr1/v1_horizons_vectors_1s.txt","rt") as inf:
+def export(vgr_id:int):
+    with open(f"data/vgr{vgr_id}/v{vgr_id}_horizons_vectors_1s.txt","rt") as inf:
         states=[]
         for line in inf:
             line=line.strip()
@@ -430,7 +462,7 @@ def export():
             et=str2et(gregoriantdb+" TDB")
             states.append([et,rx,ry,rz,vx,vy,vz])
     gtdb_last_1s=gregoriantdb
-    with open("data/vgr1/v1_horizons_vectors.txt","rt") as inf:
+    with open(f"data/vgr{vgr_id}/v{vgr_id}_horizons_vectors.txt","rt") as inf:
         states=[]
         for line in inf:
             line=line.strip()
@@ -446,7 +478,7 @@ def export():
             jdtdb,deltat,rx,ry,rz,vx,vy,vz,lt,r,rr=[float(x) for x in (jdtdb,deltat,rx,ry,rz,vx,vy,vz,lt,r,rr)]
             et=str2et(gregoriantdb+" TDB")
             states.append([et,rx,ry,rz,vx,vy,vz])
-    mkspk(oufn=f'products/vgr1_horizons_vectors.bsp',
+    mkspk(oufn=f'products/vgr{vgr_id}_horizons_vectors.bsp',
           fmt='f',
           data=states,
           input_data_type='STATES',
@@ -462,13 +494,13 @@ def export():
           data_delimiter=' ',
           leapseconds_file='data/naif0012.tls',
           pck_file='products/gravity_EGM2008_J2.tpc',
-          segment_id=f'VGR1_HORIZONS_1S',
+          segment_id=f'VGR{vgr_id}_HORIZONS_1S',
           time_wrapper='# ETSECONDS',
-          comment="""
+          comment=f"""
            Export of Horizons data calculated from a kernel they have but I don't,
-           Voyager_1_ST+refit2022_m. This file is at 1 second intervals from beginning
+           Voyager_{vgr_id}_ST+refit2022_m. This file is at 1 second intervals from beginning
            of available data to that time plus 1 hour, then at 1 minute intervals
-           to the end of 1977-09-05. From there we _do_ have a supertrajectory kernel
+           to the end of the launch day. From there we _do_ have a supertrajectory kernel
            that covers the rest of the mission. I have reason to believe that every
            supertrajectory that NAIF or SSD publishes has the same prime mission 
            segment, and just re-fit the interstellar mission portion, so I think the
@@ -480,12 +512,12 @@ def export():
 
 def main():
     init_spice()
-    #vgr1 = Voyager(vgr_id=1)
-    #vgr2 = Voyager(vgr_id=2)
-    pm=target_pm(export=True, optimize=True)
-    pm= voyager.parse_pm(voyager.pm_solutions_str[1])
-    target_centaur2(simt1=pm.simt0,y1=pm.y0,fps1=10, optimize=True, export=True)
-    export()
+    vgr_id=2
+    #pm=target_pm(export=True, optimize=True,vgr_id=vgr_id)
+    pm=voyager.parse_pm(voyager.pm_solutions_str[vgr_id])
+    target_centaur2(simt1=pm.simt0,y1=pm.y0,fps1=10, optimize=True, export=True,vgr_id=vgr_id)
+    for vgr_id in (1,2):
+        export(vgr_id)
 
 
 
