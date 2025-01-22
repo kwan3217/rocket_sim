@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from rocket_sim.srm import SRM
-from rocket_sim.universe import ZeroGRange
+from rocket_sim.universe import ZeroGRange, VerticalRange
 from rocket_sim.vehicle import Stage, kg_per_lbm, Vehicle, Engine, N_per_lbf, g0
 from test_rocket_sim.test_vehicle import tlm
 from voyager import Voyager
@@ -101,7 +101,7 @@ def main():
             stand=TestStand(vehicles=[titan3E],fps=10)
             stand.runto(t1=130.0)
         else:
-            range=ZeroGRange(vehicles=[titan3E],fps=10)
+            range=VerticalRange(vehicles=[titan3E],fps=10,forces=[])
             range.runto(t1=130.0)
         plot_tlm(titan3E,tc_id=tc_id)
     plt.show()
