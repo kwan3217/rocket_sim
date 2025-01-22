@@ -27,10 +27,10 @@ PMEngine=Engine(PMF,PMve)
 
 
 def plot_tlm(vehicle:Vehicle):
-    ts=np.array([t for t,tlm_point in vehicle.tlm_points.items()])
-    states=np.array([tlm_point.y0 for t,tlm_point in vehicle.tlm_points.items()])
-    masses=np.array([tlm_point.mass for t,tlm_point in vehicle.tlm_points.items()])
-    a_thr_mags=np.array([tlm_point.a_thr[2] for t,tlm_point in vehicle.tlm_points.items()])
+    ts=np.array([tlm_point.t for tlm_point in vehicle.tlm_points])
+    states=np.array([tlm_point.y0 for tlm_point in vehicle.tlm_points])
+    masses=np.array([tlm_point.mass for tlm_point in vehicle.tlm_points])
+    a_thr_mags=np.array([tlm_point.a_thr[2] for tlm_point in vehicle.tlm_points])
     plt.figure("Time")
     plt.plot(ts,label='mass')
     plt.figure("Mass")
