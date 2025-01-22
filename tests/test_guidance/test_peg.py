@@ -3,7 +3,7 @@ Foo all the Bars
 """
 
 import pytest
-import peg
+import guidance.peg as peg
 import numpy as np
 import matplotlib.pyplot as plt
 

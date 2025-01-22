@@ -30,3 +30,6 @@ dependencies=[
 [project.urls]
 Homepage = "https://github.com/kwan3217/Ranger/"
 Issues = "https://github.com/kwan3217/Ranger/issues"
+
+[tool.pytest.ini_options]
+norecursedirs = ["ignore_folder", "tests/test_guidance"]
