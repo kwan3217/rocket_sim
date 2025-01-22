@@ -5,13 +5,13 @@ In fact, since the drag model is attitude dependent, we are going to include a l
 but we are not going to simulate attitude kinematics or dynamics -- just something like "the rocket is
 pointed exactly into the wind" or "the rocket is pointing exactly the direction guidance wants it to point"
 """
+from collections import namedtuple
+
 import numpy as np
 from atmosphere.atmosphere import Atmosphere, SimpleEarthAtmosphere
 from kwanmath.geodesy import aTwoBody, aJ2, xyz2lla, lla2xyz
 from kwanmath.matrix import rot_z
-from kwanmath.vector import vnormalize, vcross, vdot
-from numpy.linalg import inv
-from spiceypy import pxform, str2et, furnsh, kclear
+from spiceypy import pxform, furnsh, kclear
 
 
 class Planet:

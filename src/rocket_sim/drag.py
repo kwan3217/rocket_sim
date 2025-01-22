@@ -6,7 +6,11 @@ Created: 1/22/25
 from typing import Callable
 
 import numpy as np
-from scipy.interpolate import interp1d, interp2d
+from kwanmath.vector import vlength
+from scipy.interpolate import interp1d, RectBivariateSpline
+
+from rocket_sim.planet import Planet
+from rocket_sim.vehicle import Vehicle
 
 # Table 5-1. Coefficient of the Q-dependent component of total vehicle axial force [C_A]
 #Mach number data points for axial coefficients
@@ -40,7 +44,7 @@ CnAlpha=np.array([
 ])
 #Derivative of normal force with respect to angle of attack in degrees. List of lists, first index is alpha index, second is mach.
 # Reformat into a scipy interpolator CnStarOverAlpha(alpha,mach)
-atlas_booster_CnStarOverAlpha=interp2d(CnAlpha, CnMach, np.array([
+atlas_booster_CnStarOverAlpha=RectBivariateSpline(CnAlpha, CnMach, np.array([
   [0.0556,0.0556,0.0557,0.0564,0.0586,0.0650,0.0692,0.0743,0.0731,0.0677,0.0678,0.0672,0.0690,0.0733,0.0732,0.0720,0.0736,0.0769,0.0789,0.0795,0.0803,0.0797,0.0743],
   [0.0556,0.0556,0.0557,0.0566,0.0593,0.0660,0.0709,0.0754,0.0741,0.0699,0.0699,0.0691,0.0706,0.0741,0.0741,0.0790,0.0746,0.0787,0.0819,0.0803,0.0816,0.0811,0.0756],
   [0.0556,0.0556,0.0559,0.0606,0.0643,0.0702,0.0770,0.0795,0.0781,0.0754,0.0743,0.0740,0.0744,0.0779,0.0785,0.0784,0.0796,0.0823,0.0843,0.0851,0.0869,0.0865,0.0810],
@@ -48,7 +52,7 @@ atlas_booster_CnStarOverAlpha=interp2d(CnAlpha, CnMach, np.array([
   [0.0556,0.0556,0.0625,0.0718,0.0774,0.0817,0.0899,0.0909,0.0897,0.0882,0.0874,0.0872,0.0894,0.0947,0.0970,0.0979,0.1002,0.1047,0.1086,0.1101,0.1120,0.1110,0.1049],
   [0.1348,0.1348,0.1486,0.1866,0.2179,0.2506,0.2699,0.2878,0.3008,0.3057,0.2990,0.2872,0.2676,0.2605,0.2549,0.2517,0.2461,0.2413,0.2391,0.2358,0.2348,0.2308,0.2261],
   [0.1198,0.1198,0.1320,0.1658,0.1938,0.2241,0.2423,0.2595,0.2704,0.2714,0.2648,0.2551,0.2374,0.2312,0.2265,0.2229,0.2183,0.2131,0.2105,0.2095,0.2089,0.2077,0.2065]
-]), kind='linear')
+]), kx=1,ky=1)
 
 atlas_sustainer_CnStarOverAlpha=interp1d(CnAlpha, np.array([
   0.0743,0.0756,0.0810,0.0894,0.1049,0.2261,0.2065
@@ -118,15 +122,58 @@ def atlas_drag(*,Cn0:Callable[...,float]=atlas_Cn0,
                  ...
                  return cl,cd
     """
-    def inner(*,M:float,beta_rad:float,**kwargs)->tuple[float,float]:
+    def inner(*,M:float,beta_rad:float,vehicle:Vehicle)->tuple[float,float]:
+        booster_attached=True # This should be pulled from the right vehicle.stages[].attached
+        sustainer_attached=True # ibid
         beta_deg=np.rad2deg(beta_rad)
-        cn0=Cn0(M=M,**kwargs)
-        cnStarOverAlpha=CnStarOverAlpha(beta_deg=beta_deg,M=M,**kwargs)
+        cn0=Cn0(M=M,booster_attached=booster_attached,sustainer_attached=sustainer_attached)
+        cnStarOverAlpha=CnStarOverAlpha(beta_deg=beta_deg,M=M,booster_attached=booster_attached,sustainer_attached=sustainer_attached)
         Cn=cn0+beta_deg*cnStarOverAlpha
-        Ca=Ca0(M=M,**kwargs)
+        Ca=Ca0(M=M,booster_attached=booster_attached,sustainer_attached=sustainer_attached)
         cl = Cn*np.cos(beta_rad)-Ca*np.sin(beta_rad)
         cd = Cn*np.sin(beta_rad)+Ca*np.cos(beta_rad)
         return cl,cd
+    return inner
+
+
+def mach_drag(*,Ca0:Callable[[float],float]=atlas_booster_Ca0)->Callable[...,tuple[float,float]]:
+    """
+    Generate a pure mach-driven drag model. This model generates no lift, even in nonzero angle of attack.
+    :param Ca0: Function which calculates the axial coefficient as a function of mach. It doesn't
+                get any other arguments, so scipy interp1d is usable here.
+    :return:
+    """
+    def inner(*,M:float,beta_rad:float,vehicle:Vehicle)->tuple[float,float]:
+        return 0,Ca0(M)
+    return inner
+
+
+def f_drag(*,planet:Planet,clcd:Callable[...,tuple[float,float]],Sref:float)->Callable[...,np.ndarray]:
+    """
+    :param Sref: Reference area. Typical values are the cross section area of a cylindrical rocket.
+    :param clcd: Callable that returns a tuple of lift and drag coefficients
+    :param planet: Planet object that holds the ellipsoid model for getting altitude, and the atmosphere model
+                   for getting density.
+    :return: A function as if it had the following prototype, suitable for being an element of forces=[] for
+             a Universe
+             def force(*,t:float,dt:float,y:np.ndarray,vehicle:Vehicle)->np.ndarray:
+                 ...
+    """
+    def inner(*,t:float,dt:float,y:np.ndarray,vehicle:Vehicle)->np.ndarray:
+        alt=planet.b2lla(rb=y).alt
+        air_props=planet.atm.calc_props(alt)
+        rho=air_props.Density
+        wind=np.zeros(3) # Later we will calculate the wind
+        vrel=y[3:]-wind
+        vrel_mag=vlength(vrel)
+        if vrel_mag==0:
+            # Early exit, plus avoid divide by zero when computing vrel direction on a zero vrel
+            return np.zeros(3)
+        M=vrel_mag/air_props.VSound
+        qbar=rho*vrel_mag**2/2
+        cl,cd=clcd(M=M,beta_rad=0.0,vehicle=vehicle)
+        d=-vrel/vrel_mag*qbar*Sref*cd
+        return d
     return inner
 
 
