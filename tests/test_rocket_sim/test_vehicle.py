@@ -69,6 +69,7 @@ def test_zero_g_range(vehicle:Vehicle):
     stand.runto(t1=45.1)
     plot_tlm(vehicle)
 
+
 @pytest.mark.parametrize("vehicle", [copy(Voyager1)])
 def test_time_reverse(vehicle:Vehicle):
     stand=ZeroGRange(vehicles=[vehicle],fps=10)

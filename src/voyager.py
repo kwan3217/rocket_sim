@@ -14,16 +14,13 @@ from kwanmath.geodesy import llr2xyz
 from kwanmath.vector import vnormalize, vcross, vdot
 from spiceypy import furnsh, gdpool, str2et
 
-from rocket_sim.vehicle import Vehicle, Stage, Engine
+from rocket_sim.vehicle import Vehicle, Stage, Engine, kg_per_lbm, g0, N_per_lbf
 
 
 class Voyager(Vehicle):
     def __init__(self,*,vgr_id:int=1):
         self.vgr_id=vgr_id
         self.spice_id=-30-vgr_id
-        lb_kg_conv = 0.45359237  # this many kg in 1 lb
-        g0 = 9.80665  # Used to convert kgf to N
-        lbf_N_conv = lb_kg_conv * g0  # This many N in 1 lbf
 
         # From The Voyager Spacecraft, Gold Medal Lecture in Mech Eng, table 2 bottom line
         # mm is the mission module, what would be known as the "spacecraft" after Earth departure.
@@ -31,7 +28,7 @@ class Voyager(Vehicle):
         self.mm_mprop = 103.4
         self.mm = Stage(prop=self.mm_mprop, total=self.mm_mtot,name=f"Voyager {vgr_id} Mission Module")  # dry mass and RCS prop for Voyager
         # Value from TC-7 Voyager 2 Flight Data Report, p10
-        self.mmpm_mtot = 4470 * lb_kg_conv
+        self.mmpm_mtot = 4470 * kg_per_lbm
         # pm is the propulsion module
         self.pm_mtot = self.mmpm_mtot - self.mm_mtot
         # Values from AIAA79-1334 Voyager Prop System, table 5
@@ -47,15 +44,15 @@ class Voyager(Vehicle):
         # All centaur stuff is for engine cn, burn bn
         # Voyager 1 TC-6 from Table 8-4, p87 of flight data report
         self.thrust_eb={}
-        self.thrust_eb[(1,1)]=[None,14807,15033][vgr_id]*lbf_N_conv
-        self.thrust_eb[(1,2)]=[None,14883,15166][vgr_id]*lbf_N_conv
-        self.thrust_eb[(2,1)]=[None,15073,15200][vgr_id]*lbf_N_conv
-        self.thrust_eb[(2,2)]=[None,15242,15460][vgr_id]*lbf_N_conv
+        self.thrust_eb[(1,1)]= [None,14807,15033][vgr_id] * N_per_lbf
+        self.thrust_eb[(1,2)]= [None,14883,15166][vgr_id] * N_per_lbf
+        self.thrust_eb[(2,1)]= [None,15073,15200][vgr_id] * N_per_lbf
+        self.thrust_eb[(2,2)]= [None,15242,15460][vgr_id] * N_per_lbf
         self.ve_eb={}
-        self.ve_eb[(1,1)]=[None,441.5,441.8][vgr_id]*g0
-        self.ve_eb[(1,2)]=[None,441.7,441.5][vgr_id]*g0
-        self.ve_eb[(2,1)]=[None,441.1,442.0][vgr_id]*g0
-        self.ve_eb[(2,2)]=[None,441.3,441.4][vgr_id]*g0
+        self.ve_eb[(1,1)]= [None,441.5,441.8][vgr_id] * g0
+        self.ve_eb[(1,2)]= [None,441.7,441.5][vgr_id] * g0
+        self.ve_eb[(2,1)]= [None,441.1,442.0][vgr_id] * g0
+        self.ve_eb[(2,2)]= [None,441.3,441.4][vgr_id] * g0
         # Mass mixture ratio - this many kg of oxidizer (LOX) is used for each kg of fuel (LH2)
         self.mr_eb={}
         self.mr_eb[(1,1)]=[None,4.90,5.08][vgr_id]
@@ -71,8 +68,8 @@ class Voyager(Vehicle):
         # Separation time of PM
         self.tsep_pm=[None,3705.2,3657.7][vgr_id]
         # Centaur residuals after burn 2, flight data report section p124 (V1) and p117 (V2)
-        self.c_lox_resid=[None,276,374][vgr_id]*lb_kg_conv
-        self.c_lh2_resid=[None, 36, 47][vgr_id]*lb_kg_conv
+        self.c_lox_resid= [None,276,374][vgr_id] * kg_per_lbm
+        self.c_lh2_resid= [None, 36, 47][vgr_id] * kg_per_lbm
         self.c_resid=self.c_lox_resid+self.c_lh2_resid
         # Calculated results below
         self.dt_cb={}
@@ -131,7 +128,7 @@ class Voyager(Vehicle):
         # Now build the engines and stage. We actually give it 4 engines, since we have
         # different stats for each burn. Account the residual as part of the structure
         # so that the "tank" is empty after the expected burns.
-        self.centaur=Stage(dry=4400*lb_kg_conv+self.c_resid,prop=self.c_mprop-self.c_resid,name=f"Centaur D-1T {vgr_id+5}")
+        self.centaur=Stage(dry=4400 * kg_per_lbm + self.c_resid, prop=self.c_mprop - self.c_resid, name=f"Centaur D-1T {vgr_id + 5}")
         self.eb={eb:Engine(thrust10=thr,ve0=self.ve_eb[eb],name=f"Centaur RL-10 C-{eb[0]} for burn {eb[1]}") for eb,thr in self.thrust_eb.items()}
         super().__init__(stages=[self.centaur,self.pm,self.mm],
                          engines=[(self.pm_engine,1)]+[(engine,0) for eb,engine in self.eb.items()],

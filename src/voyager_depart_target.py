@@ -509,7 +509,6 @@ def export(vgr_id:int):
           )
 
 
-
 def main():
     init_spice()
     vgr_id=2
@@ -518,7 +517,6 @@ def main():
     target_centaur2(simt1=pm.simt0,y1=pm.y0,fps1=10, optimize=True, export=True,vgr_id=vgr_id)
     for vgr_id in (1,2):
         export(vgr_id)
-
 
 
 if __name__=="__main__":
