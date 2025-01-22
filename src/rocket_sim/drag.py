@@ -7,6 +7,7 @@ from typing import Callable
 
 import numpy as np
 from scipy.interpolate import interp1d, interp2d
+from scipy.interpolate import interp1d, RectBivariateSpline
 
 # Table 5-1. Coefficient of the Q-dependent component of total vehicle axial force [C_A]
 #Mach number data points for axial coefficients
@@ -40,7 +41,7 @@ CnAlpha=np.array([
 ])
 #Derivative of normal force with respect to angle of attack in degrees. List of lists, first index is alpha index, second is mach.
 # Reformat into a scipy interpolator CnStarOverAlpha(alpha,mach)
-atlas_booster_CnStarOverAlpha=interp2d(CnAlpha, CnMach, np.array([
+atlas_booster_CnStarOverAlpha=RectBivariateSpline(CnAlpha, CnMach, np.array([
   [0.0556,0.0556,0.0557,0.0564,0.0586,0.0650,0.0692,0.0743,0.0731,0.0677,0.0678,0.0672,0.0690,0.0733,0.0732,0.0720,0.0736,0.0769,0.0789,0.0795,0.0803,0.0797,0.0743],
   [0.0556,0.0556,0.0557,0.0566,0.0593,0.0660,0.0709,0.0754,0.0741,0.0699,0.0699,0.0691,0.0706,0.0741,0.0741,0.0790,0.0746,0.0787,0.0819,0.0803,0.0816,0.0811,0.0756],
   [0.0556,0.0556,0.0559,0.0606,0.0643,0.0702,0.0770,0.0795,0.0781,0.0754,0.0743,0.0740,0.0744,0.0779,0.0785,0.0784,0.0796,0.0823,0.0843,0.0851,0.0869,0.0865,0.0810],
@@ -48,7 +49,7 @@ atlas_booster_CnStarOverAlpha=interp2d(CnAlpha, CnMach, np.array([
   [0.0556,0.0556,0.0625,0.0718,0.0774,0.0817,0.0899,0.0909,0.0897,0.0882,0.0874,0.0872,0.0894,0.0947,0.0970,0.0979,0.1002,0.1047,0.1086,0.1101,0.1120,0.1110,0.1049],
   [0.1348,0.1348,0.1486,0.1866,0.2179,0.2506,0.2699,0.2878,0.3008,0.3057,0.2990,0.2872,0.2676,0.2605,0.2549,0.2517,0.2461,0.2413,0.2391,0.2358,0.2348,0.2308,0.2261],
   [0.1198,0.1198,0.1320,0.1658,0.1938,0.2241,0.2423,0.2595,0.2704,0.2714,0.2648,0.2551,0.2374,0.2312,0.2265,0.2229,0.2183,0.2131,0.2105,0.2095,0.2089,0.2077,0.2065]
-]), kind='linear')
+]), kx=1,ky=1)
 
 atlas_sustainer_CnStarOverAlpha=interp1d(CnAlpha, np.array([
   0.0743,0.0756,0.0810,0.0894,0.1049,0.2261,0.2065
