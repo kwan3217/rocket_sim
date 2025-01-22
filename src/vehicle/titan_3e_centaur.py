@@ -6,7 +6,7 @@ import numpy as np
 from rocket_sim.srm import SRM
 from rocket_sim.vehicle import Stage, kg_per_lbm, Vehicle, Engine, N_per_lbf, g0
 from test_rocket_sim.test_vehicle import tlm
-from voyager import Voyager
+from vehicle.voyager import Voyager
 
 
 class Titan3E(Vehicle):
