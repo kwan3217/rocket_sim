@@ -8,9 +8,11 @@ from typing import Callable
 import numpy as np
 from spiceypy import spkezr, gdpool
 
+from rocket_sim.vehicle import Vehicle
+
 
 def aTwoBody(*,gm:float)->Callable[...,np.ndarray]:
-    def inner(*,t:float,y:np.ndarray,dt:float)->np.ndarray:
+    def inner(*,t:float,y:np.ndarray,dt:float,vehicle:Vehicle)->np.ndarray:
         """
         Two-body gravity acceleration
         :param rv: Position vector in an inertial frame
@@ -40,7 +42,7 @@ def aJ2(*,j2:float,gm:float,re:float):
     :param re: Effective equatorial radius, must correspond with the J2 value provided
     :return: A function which calculates J2 acceleration given position
     """
-    def inner(*,t:float,y:np.ndarray,dt:float):
+    def inner(*,t:float,y:np.ndarray,dt:float,vehicle:Vehicle):
         """
         J2 gravity acceleration
 
@@ -96,7 +98,7 @@ def SpiceThirdBody(*,spice_id_center:int=399,
     spice_id_center=str(spice_id_center)
     spice_id_body=str(spice_id_body)
     body_gm=gdpool(f"BODY{spice_id_body}_GM",0,1)[0]*(1000**3) # convert from stored km**3/s**2 to m**3/s**2
-    def inner(*,t:float,y:np.ndarray,dt:float)->np.ndarray:
+    def inner(*,t:float,y:np.ndarray,dt:float,vehicle:Vehicle)->np.ndarray:
         """
         Compute the perturbation due to the third body on the spacecraft.
 

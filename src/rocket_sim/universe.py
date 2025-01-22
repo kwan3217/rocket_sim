@@ -112,9 +112,9 @@ class Universe:
             a=vehicle.generate_acc(t=t,dt=dt,y=y,major_step=major_step)
             m = vehicle.mass()
             for force in self.forces:
-                a+=force(t=t,dt=dt,y=y)/m
+                a+=force(t=t,dt=dt,y=y,vehicle=vehicle)/m
             for acc in self.accs:
-                a+=acc(t=t,dt=dt,y=y)
+                a+=acc(t=t,dt=dt,y=y,vehicle=vehicle)
             return np.hstack((y[3:],a))
         for vehicle in self.vehicles:
             vehicle.y=rk4(F=F,t0=self.t(),y0=vehicle.y,dt=direction/self.fps,vehicle=vehicle)
@@ -139,3 +139,10 @@ class TestStand(ZeroGRange):
         # Move the vehicles back
         for vehicle,y in zip(self.vehicles,old_ys):
             vehicle.y=y
+
+
+class VerticalRange(Universe):
+    def __init__(self,*,vehicles:list[Vehicle],fps:float,g0:float=9.80665,forces:list[Callable[...,np.ndarray]]):
+        def uniform_gravity(*,t:float,dt:float,y:float,vehicle:Vehicle):
+            return np.array([0,0,-g0])
+        super().__init__(vehicles=vehicles,forces=forces,accs=[uniform_gravity],t0=0,fps=fps)
