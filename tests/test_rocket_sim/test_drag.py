@@ -3,36 +3,45 @@ from collections import namedtuple
 import numpy as np
 import pytest
 from atmosphere.atmosphere import SimpleEarthAtmosphere, Atmosphere
+from kwanmath.vector import vlength
 from matplotlib import pyplot as plt
 
 from rocket_sim.drag import f_drag, mach_drag, INCHES
 from rocket_sim.planet import Planet
 from rocket_sim.universe import VerticalRange
-from rocket_sim.vehicle import Vehicle
+from rocket_sim.vehicle import Vehicle, g0
 from vehicle.titan_3e_centaur import Titan3E
 
 
 def plot_tlm(vehicle:Vehicle,tc_id:int):
-    ts=np.array([t for t,y,mass,thr_mag in vehicle.tlm])
-    states=np.array([y for t,y,mass,thr_mag in vehicle.tlm])
-    masses=np.array([mass for t,y,mass,thr_mag in vehicle.tlm])
-    thr_mags=np.array([thr_mag for t,y,mass,thr_mag in vehicle.tlm])
+    ts=np.array([t for t in vehicle.tlm_points.keys()])
+    states=np.array([tlm_point.y0 for t,tlm_point in vehicle.tlm_points.items()])
+    masses=np.array([tlm_point.mass for t,tlm_point in vehicle.tlm_points.items()])
+    a_thr_mags=np.array([vlength(tlm_point.a_thr) for t,tlm_point in vehicle.tlm_points.items()])
+    drag_mags=np.array([tlm_point.Fs[0][2] if len(tlm_point.Fs)>0 else 0.0 for t,tlm_point in vehicle.tlm_points.items()])
+    a_drag_mags=drag_mags/masses
+    a_grav_mags=np.array([tlm_point.accs[0][2] for t,tlm_point in vehicle.tlm_points.items()])
+    a_mags=a_thr_mags+a_drag_mags+a_grav_mags
     plt.figure("Vehicle telemetry")
-    plt.subplot(2,2,1)
-    plt.title("Mass")
-    plt.plot(masses,label=f'mass {tc_id}')
+    plt.subplot(4,1,1)
+    plt.ylabel("Mass/kg")
+    plt.plot(ts,masses,label=f'mass {tc_id}')
     plt.legend()
-    plt.subplot(2,2,2)
-    plt.title("acc")
-    plt.plot(thr_mags/masses/9.80665,label=f'acc {tc_id}')
+    plt.subplot(4,1,2)
+    plt.ylabel("acc/g")
+    plt.plot(ts,a_thr_mags/g0,label=f'thr {tc_id}')
+    plt.plot(ts,a_drag_mags/g0,label=f'drag {tc_id}')
+    plt.plot(ts,a_grav_mags/g0,label=f'grav {tc_id}')
+    plt.plot(ts,a_mags/g0,label=f'tot {tc_id}')
     plt.legend()
-    plt.subplot(2,2,3)
-    plt.title("v")
-    plt.plot(states[:,5],label=f'vz {tc_id}')
+    plt.subplot(4,1,3)
+    plt.ylabel("v/(m/s)")
+    plt.plot(ts,states[:,5],label=f'vz {tc_id}')
     plt.legend()
-    plt.subplot(2,2,4)
-    plt.title("pos")
-    plt.plot(states[:,2],label=f'rz {tc_id}')
+    plt.subplot(4,1,4)
+    plt.ylabel("pos/m")
+    plt.xlabel("time/s")
+    plt.plot(ts,states[:,2],label=f'rz {tc_id}')
     plt.legend()
     plt.pause(0.1)
 
