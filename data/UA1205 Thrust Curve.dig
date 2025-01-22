@@ -40,7 +40,7 @@
                 <ColorFilter CurveName="UA1205_F_lb" Mode="2" ModeString="Intensity" IntensityLow="0" IntensityHigh="50" ForegroundLow="0" ForegroundHigh="10" HueLow="180" HueHigh="360" SaturationLow="50" SaturationHigh="100" ValueLow="0" ValueHigh="50"/>
                 <CurveStyle CurveName="UA1205_F_lb">
                     <LineStyle Width="1" Color="1" ColorString="Blue" ConnectAs="1" ConnectAsString="FunctionStraight"/>
-                    <PointStyle Radius="10" LineWidth="1" Color="1" ColorString="Blue" Shape="1" ShapeString="Cross"/>
+                    <PointStyle Radius="1" LineWidth="0" Color="1" ColorString="Blue" Shape="5" ShapeString="X"/>
                 </CurveStyle>
                 <CurvePoints>
                     <Point Identifier="UA1205_F_lb&#9;point&#9;90" Ordinal="0" IsAxisPoint="False" IsXOnly="False" Index="163">
