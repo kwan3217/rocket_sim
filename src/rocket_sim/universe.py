@@ -139,3 +139,10 @@ class TestStand(ZeroGRange):
         # Move the vehicles back
         for vehicle,y in zip(self.vehicles,old_ys):
             vehicle.y=y
+
+
+class VerticalRange(Universe):
+    def __init__(self,*,vehicles:list[Vehicle],fps:float,g0:float=9.80665,forces:list[Callable[...,np.ndarray]]):
+        def uniform_gravity(*,t:float,dt:float,y:float,vehicle:Vehicle):
+            return np.array([0,0,-g0])
+        super().__init__(vehicles=vehicles,forces=forces,accs=[uniform_gravity],t0=0,fps=fps)
