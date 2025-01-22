@@ -54,3 +54,14 @@ Trace of SRM 68 start transient from TC-6 (Voyager 1 launch vehicle)
 from figure 7-3, p54 of the TC-6 flight data report. Since the scale is
 in PSI Absolute, the chart has been manually edited such that the first
 point is t=0,P=14.7
+
+## `TitanSRM thrust curve.dig`
+Trace of generic thrust curve from Titan 3E Centaur D-1T Systems Summary,
+figure 6-15, p205. Curve is interpreted as being at standard conditions
+and at sea level throughout the burn -- it's probably imported data
+from a test on a test stand.
+
+## `UA1205 Thrust Curve.dig`
+Trace of a generic UA1205 motor, from the 120" Potential, figure 1. Curve
+is stated to be vacuum thrust at grain temperature of 80degF, very near
+the Voyager launch temperature of 82.5degF.
