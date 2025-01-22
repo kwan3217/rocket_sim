@@ -177,4 +177,6 @@ class Vehicle:
         return Fmag*Fdir/m
 
 
-
+kg_per_lbm = 0.45359237  # this many kg in 1 lb
+g0 = 9.80665  # Used to convert kgf to N
+N_per_lbf = kg_per_lbm * g0  # This many N in 1 lbf
