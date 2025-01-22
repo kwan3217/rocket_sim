@@ -30,11 +30,6 @@ PMF=PMItot/BurnTime      # Mean thrust assuming rectangular thrust curve
 PMEngine=Engine(PMF,PMve)
 
 
-def tlm(*, t: float, dt: float, y: np.ndarray, major_step: bool, vehicle: Vehicle):
-    if major_step:
-        vehicle.tlm.append((t,y.copy(),vehicle.mass(),vehicle.thrust_mag(t=t,dt=dt,y=y,major_step=False)))
-
-
 def plot_tlm(vehicle:Vehicle):
     ts=np.array([t for t,y,mass,thr_mag in vehicle.tlm])
     states=np.array([y for t,y,mass,thr_mag in vehicle.tlm])
@@ -53,7 +48,7 @@ def plot_tlm(vehicle:Vehicle):
     plt.show()
 
 
-Voyager1=Vehicle(stages=[Voyager1Stage,PMStage],engines=[(PMEngine,1)],extras=[tlm])
+Voyager1=Vehicle(stages=[Voyager1Stage,PMStage],engines=[(PMEngine,1)])
 
 
 @pytest.mark.parametrize("vehicle", [copy(Voyager1)])

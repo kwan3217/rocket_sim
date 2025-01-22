@@ -5,7 +5,6 @@ import numpy as np
 
 from rocket_sim.srm import SRM
 from rocket_sim.vehicle import Stage, kg_per_lbm, Vehicle, Engine, N_per_lbf, g0
-from test_rocket_sim.test_vehicle import tlm
 from vehicle.voyager import Voyager
 
 
@@ -61,6 +60,6 @@ class Titan3E(Vehicle):
         self.sc=vgr.stages[vgr.i_mm]
         super().__init__(stages=[self.srbL,self.srbR,self.stage1,self.stage2,
                                 self.interstage_and_shroud,self.centaur,self.pm,self.sc],
-                        engines=[(self.srmL,0),(self.srmR,1)],extras=[tlm])
+                        engines=[(self.srmL,0),(self.srmR,1)])
 
 

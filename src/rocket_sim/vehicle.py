@@ -9,6 +9,7 @@ from typing import Callable
 
 import numpy as np
 
+
 @dataclass
 class Stage:
     """
@@ -129,8 +130,9 @@ class Vehicle:
         # We don't use it ourselves in our methods, preferring the y passed in
         # so we get the right one for each minor step.
         self.y:np.ndarray|None=None
+        self.tlm_points={}
     def reset(self):
-        self.tlm=[]
+        self.tlm_points={}
         for stage in self.stages:
             stage.prop_mass=stage.prop_mass0
             stage.attached=True
@@ -176,7 +178,31 @@ class Vehicle:
         m=self.mass()
         return Fmag*Fdir/m
 
+    def start_tlm_point(self,*, t:float, dt:float):
+        """
+        Start logging a telemetry point
+        :param t: Time of telemetry point. It is expected that each time will get
+                  logged once and only once -- the universe logs only on major steps.
+        :param dt: time step size
+        """
+        self.tlm_point=TlmPoint(t=t,dt=dt)
+        self.tlm_points[t]=self.tlm_point
+    def finish_tlm_point(self):
+        pass
+
 
 kg_per_lbm = 0.45359237  # this many kg in 1 lb
 g0 = 9.80665  # Used to convert kgf to N
 N_per_lbf = kg_per_lbm * g0  # This many N in 1 lbf
+
+
+@dataclass
+class TlmPoint:
+    t:float
+    dt:float
+    y0:np.ndarray=None
+    y1:np.ndarray=None
+    mass:float=None
+    a_thr:np.ndarray=None
+    Fs:list[np.ndarray]=None
+    accs:list[np.ndarray]=None

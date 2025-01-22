@@ -5,7 +5,6 @@ Created: 1/19/25
 """
 import re
 from collections import namedtuple
-from dataclasses import dataclass
 from math import isclose
 from typing import Callable
 
@@ -131,8 +130,7 @@ class Voyager(Vehicle):
         self.centaur=Stage(dry=4400 * kg_per_lbm + self.c_resid, prop=self.c_mprop - self.c_resid, name=f"Centaur D-1T {vgr_id + 5}")
         self.eb={eb:Engine(thrust10=thr,ve0=self.ve_eb[eb],name=f"Centaur RL-10 C-{eb[0]} for burn {eb[1]}") for eb,thr in self.thrust_eb.items()}
         super().__init__(stages=[self.centaur,self.pm,self.mm],
-                         engines=[(self.pm_engine,1)]+[(engine,0) for eb,engine in self.eb.items()],
-                         extras=[tlm])
+                         engines=[(self.pm_engine,1)]+[(engine,0) for eb,engine in self.eb.items()])
         self.i_epm=0
         self.i_eb={1:(1,1),2:(1,2),3:(2,1),4:(2,2)}
         self.i_centaur=0
@@ -148,24 +146,6 @@ class Voyager(Vehicle):
         for i_engine,(e,b) in self.i_eb.items():
             self.engines[i_engine].throttle=1 if self.t_cb[b,0]<=t<self.t_cb[b,1] else 0
         self.stages[0].attached=(t<self.tsep_pm)
-
-
-@dataclass
-class TlmPoint:
-    t:float
-    y:np.ndarray
-    mass:float
-    thrust:float
-    dir:np.ndarray
-
-
-def tlm(*, t: float, dt: float, y: np.ndarray, major_step: bool, vehicle: Vehicle):
-    if major_step:
-        vehicle.tlm.append(TlmPoint(t=t,
-                                    y=y.copy(),
-                                    mass=vehicle.mass(),
-                                    thrust=vehicle.thrust_mag(t=t, dt=dt, y=y, major_step=False),
-                                    dir=vehicle.thrust_dir(t=t,dt=dt,y=y, major_step=False)))
 
 
 def prograde_guide(*,t:float,y:np.ndarray,dt:float,major_step:bool,vehicle:Vehicle):

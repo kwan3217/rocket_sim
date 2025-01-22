@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 from rocket_sim.universe import TestStand, ZeroGRange
 from rocket_sim.vehicle import Engine, N_per_lbf, Stage, Vehicle
-from test_rocket_sim.test_vehicle import plot_tlm, tlm
+from test_rocket_sim.test_vehicle import plot_tlm
 
 
 class SRM(Engine):
@@ -81,7 +81,7 @@ def main():
     print(srm)
     print(srm.total_impulse())
     srb=Stage(prop=197924,dry=32447,name="Left SRB")
-    vehicle=Vehicle(stages=[srb],engines=[(srm,0)],extras=[tlm])
+    vehicle=Vehicle(stages=[srb],engines=[(srm,0)])
     print(vehicle.stages)
     print(vehicle.engines)
     if False:
