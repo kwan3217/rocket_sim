@@ -6,8 +6,11 @@ Created: 1/22/25
 from typing import Callable
 
 import numpy as np
-from scipy.interpolate import interp1d, interp2d
+from kwanmath.vector import vlength
 from scipy.interpolate import interp1d, RectBivariateSpline
+
+from rocket_sim.planet import Planet
+from rocket_sim.vehicle import Vehicle
 
 # Table 5-1. Coefficient of the Q-dependent component of total vehicle axial force [C_A]
 #Mach number data points for axial coefficients
@@ -119,15 +122,58 @@ def atlas_drag(*,Cn0:Callable[...,float]=atlas_Cn0,
                  ...
                  return cl,cd
     """
-    def inner(*,M:float,beta_rad:float,**kwargs)->tuple[float,float]:
+    def inner(*,M:float,beta_rad:float,vehicle:Vehicle)->tuple[float,float]:
+        booster_attached=True # This should be pulled from the right vehicle.stages[].attached
+        sustainer_attached=True # ibid
         beta_deg=np.rad2deg(beta_rad)
-        cn0=Cn0(M=M,**kwargs)
-        cnStarOverAlpha=CnStarOverAlpha(beta_deg=beta_deg,M=M,**kwargs)
+        cn0=Cn0(M=M,booster_attached=booster_attached,sustainer_attached=sustainer_attached)
+        cnStarOverAlpha=CnStarOverAlpha(beta_deg=beta_deg,M=M,booster_attached=booster_attached,sustainer_attached=sustainer_attached)
         Cn=cn0+beta_deg*cnStarOverAlpha
-        Ca=Ca0(M=M,**kwargs)
+        Ca=Ca0(M=M,booster_attached=booster_attached,sustainer_attached=sustainer_attached)
         cl = Cn*np.cos(beta_rad)-Ca*np.sin(beta_rad)
         cd = Cn*np.sin(beta_rad)+Ca*np.cos(beta_rad)
         return cl,cd
+    return inner
+
+
+def mach_drag(*,Ca0:Callable[[float],float]=atlas_booster_Ca0)->Callable[...,tuple[float,float]]:
+    """
+    Generate a pure mach-driven drag model. This model generates no lift, even in nonzero angle of attack.
+    :param Ca0: Function which calculates the axial coefficient as a function of mach. It doesn't
+                get any other arguments, so scipy interp1d is usable here.
+    :return:
+    """
+    def inner(*,M:float,beta_rad:float,vehicle:Vehicle)->tuple[float,float]:
+        return 0,Ca0(M)
+    return inner
+
+
+def f_drag(*,planet:Planet,clcd:Callable[...,tuple[float,float]],Sref:float)->Callable[...,np.ndarray]:
+    """
+    :param Sref: Reference area. Typical values are the cross section area of a cylindrical rocket.
+    :param clcd: Callable that returns a tuple of lift and drag coefficients
+    :param planet: Planet object that holds the ellipsoid model for getting altitude, and the atmosphere model
+                   for getting density.
+    :return: A function as if it had the following prototype, suitable for being an element of forces=[] for
+             a Universe
+             def force(*,t:float,dt:float,y:np.ndarray,vehicle:Vehicle)->np.ndarray:
+                 ...
+    """
+    def inner(*,t:float,dt:float,y:np.ndarray,vehicle:Vehicle)->np.ndarray:
+        alt=planet.b2lla(rb=y).alt
+        air_props=planet.atm.calc_props(alt)
+        rho=air_props.Density
+        wind=np.zeros(3) # Later we will calculate the wind
+        vrel=y[3:]-wind
+        vrel_mag=vlength(vrel)
+        if vrel_mag==0:
+            # Early exit, plus avoid divide by zero when computing vrel direction on a zero vrel
+            return np.zeros(3)
+        M=vrel_mag/air_props.VSound
+        qbar=rho*vrel_mag**2/2
+        cl,cd=clcd(M=M,beta_rad=0.0,vehicle=vehicle)
+        d=-vrel/vrel_mag*qbar*Sref*cd
+        return d
     return inner
 
 
