@@ -144,7 +144,7 @@ def test_SpiceThirdBody(rose):
     furnsh("data/de440.bsp")
     furnsh("data/pck00011.tpc")
     furnsh("data/gm_de440.tpc")
-    furnsh("data/gravity_EGM2008_J2.tpc")
+    furnsh("products/gravity_EGM2008_J2.tpc")
     center_id=399
     body_id=301 # Moon has the strongest third-body perturbation since it is closest
     re=gdpool(f"BODY{center_id}_RADII",0,3)[0]*1000.0 # Radius of the planet from the kernel
