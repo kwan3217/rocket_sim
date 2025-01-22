@@ -2,19 +2,21 @@
 
 """
 import numpy as np
+from scipy.interpolate import interp2d, interp1d
 
 # Aerodynamics tables
 
 # Table 5-1. Coefficient of the Q-dependent component of total vehicle axial force [C_A]
 #Mach number data points for axial coefficients
-CaMach=[
+CaMach=np.array([
    0.00, 0.25, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.93, 0.95, 1.00, 1.05, 1.10, 1.15, 1.25, 1.40, 1.50, 1.75, 2.00, 2.50, 3.50, 4.50, 6.00, 8.00,10.00
-]
+])
 
 #axial coefficient, from table 3-1 **C_A of total vehicle
-Ca0=[
+# Make the 1D table into a function f(mach)
+Ca0=interp1d(CaMach,np.array([
   0.373,0.347,0.345,0.350,0.365,0.391,0.425,0.481,0.565,0.610,0.725,0.760,0.773,0.770,0.740,0.665,0.622,0.530,0.459,0.374,0.303,0.273,0.259,0.267,0.289
-]
+]),kind='linear')
 
 #p45 of report
 #By the time the vehicle drops the booster, it's going fast enough that coefficients are not functions of mach
@@ -24,26 +26,29 @@ CaCentaur=2.200
 
 # Table 5-2. Components of total vehicle normal force coefficient
 #Mach number data points for normal coefficients
-CnMach=[
+CnMach=np.array([
   0.00, 0.20, 0.50, 0.70, 0.80, 0.90, 0.95, 1.00, 1.05, 1.15, 1.20, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 3.00, 3.50, 4.00, 5.00, 7.00, 10.00
-]
+])
 
 #Cn0 is the normal force at zero angle of attack, due to vehicle asymmetry. Other, smoother, vehicles might want to just use 0 for this.
-Cn0=[
+# Make the 1D table into a function f(mach)
+Cn0=interp1d(CnMach,np.array([
   0.0052,0.0052,0.0052,0.0100,0.0085,0.0079,0.0062,0.0057,0.0053,0.0051,0.0050,0.0050,0.0055,0.0072,0.0063,0.0059,0.0060,0.0062,0.0064,0.0060,0.0050,0.0036,0.0030
-]
+]),kind='linear')
+
 #Cm0 is the moment at zero angle of attack
-Cm0=[
+Cm0=np.array([
   -0.0060,-0.0060,-0.0068,-0.0088,-0.0074,-0.0060,-0.0060,-0.0062,-0.0065,-0.0070,-0.0065,-0.0058,-0.0028,-0.0083,-0.0060,-0.0036,-0.0032,-0.0040,-0.0043,-0.0040,-0.0030,-0.0020,-0.0020
-]
+])
 
 #Alpha data points for angle-of-attack dependence
-CnAlpha=[
+CnAlpha=np.array([
   0,	2,	4,	6,	8,	60,	90
-];
+])
 
 #Derivative of normal force with respect to angle of attack in degrees. List of lists, first index is alpha index, second is mach.
-CnStarOverAlpha=[
+# Reformat into a scipy interpolator CnStarOverAlpha(alpha,mach)
+CnStarOverAlpha=interp2d(CnAlpha,CnMach,np.array([
   [0.0556,0.0556,0.0557,0.0564,0.0586,0.0650,0.0692,0.0743,0.0731,0.0677,0.0678,0.0672,0.0690,0.0733,0.0732,0.0720,0.0736,0.0769,0.0789,0.0795,0.0803,0.0797,0.0743],
   [0.0556,0.0556,0.0557,0.0566,0.0593,0.0660,0.0709,0.0754,0.0741,0.0699,0.0699,0.0691,0.0706,0.0741,0.0741,0.0790,0.0746,0.0787,0.0819,0.0803,0.0816,0.0811,0.0756],
   [0.0556,0.0556,0.0559,0.0606,0.0643,0.0702,0.0770,0.0795,0.0781,0.0754,0.0743,0.0740,0.0744,0.0779,0.0785,0.0784,0.0796,0.0823,0.0843,0.0851,0.0869,0.0865,0.0810],
@@ -51,13 +56,13 @@ CnStarOverAlpha=[
   [0.0556,0.0556,0.0625,0.0718,0.0774,0.0817,0.0899,0.0909,0.0897,0.0882,0.0874,0.0872,0.0894,0.0947,0.0970,0.0979,0.1002,0.1047,0.1086,0.1101,0.1120,0.1110,0.1049],
   [0.1348,0.1348,0.1486,0.1866,0.2179,0.2506,0.2699,0.2878,0.3008,0.3057,0.2990,0.2872,0.2676,0.2605,0.2549,0.2517,0.2461,0.2413,0.2391,0.2358,0.2348,0.2308,0.2261],
   [0.1198,0.1198,0.1320,0.1658,0.1938,0.2241,0.2423,0.2595,0.2704,0.2714,0.2648,0.2551,0.2374,0.2312,0.2265,0.2229,0.2183,0.2131,0.2105,0.2095,0.2089,0.2077,0.2065]
-]
+]),kind='linear')
 
 # Sustainer phase, after booster drop. Valid at any mach above M=8.
 Cn0Sust=0.0030
-CnStarOverAlphaSust=[
+CnStarOverAlphaSust=interp1d(CnAlpha,np.array([
   0.0743,0.0756,0.0810,0.0894,0.1049,0.2261,0.2065
-]
+]),kind='linear')
 
 # Coefficient for pitching moment
 XcpLref=[
@@ -75,14 +80,16 @@ Sref=(12*12*78.5)*INCHES*INCHES #Reference area, roughly equal to 10' diameter c
 Lref=1500*INCHES # Reference length, roughly equal to vehicle total length but exactly as specified on p
 
 
-def AtlasBodyLift(*,M:float,beta_rad:float=None,beta_deg:float=None,
-                  booster_attached:bool=True,sustainer_attached:bool=True)->tuple[float,float,float]:
+def AtlasBodyLift(*,M:float,beta:float,deg:bool=True,
+                  booster_attached:bool=True,sustainer_attached:bool=True)->tuple[float,float]:
     """
 
-    :param beta_deg: Angle of attack in degrees
-    :param beta_rad: Angle of attack in radians, used only if beta_deg is not passed.
+    :param sustainer_attached: True if sustainer is attached.
+    :param booster_attached: True if booster is attached.
+    :param beta: Angle of attack
+    :param deg: True if beta is in degrees, False otherwise. We need both but do the conversion
+                internally, so don't feel ashamed to use either degrees or radians.
     :param M: Mach number
-    :param Re: Reynolds Number
     :return: Tuple of lift coefficient cl, drag coefficient cd
 
     Dynamic pressure:
@@ -95,18 +102,20 @@ def AtlasBodyLift(*,M:float,beta_rad:float=None,beta_deg:float=None,
     Total lift force (perpendicular to vrel in plane containing vrel and body axis)
       L=Cl*q*Sref*
     """
-    if beta_deg is None:
-        beta_deg=np.rad2deg(beta_rad)
+    if deg:
+        beta_deg=beta
+        beta_rad=np.rad2deg(beta)
     else:
-        beta_rad=np.deg2rad(beta_deg)
+        beta_rad = beta
+        beta_deg = np.deg2rad(beta)
     if booster_attached:
-        cn0=listerp(CnMach,Cn0,M)
-        cnStarOverAlpha=tableterp(CnStarOverAlpha,CnAlpha,CnMach,beta_deg,M)
+        cn0=Cn0(M)
+        cnStarOverAlpha=CnStarOverAlpha(beta_deg,M)
         Cn=cn0+beta_deg*cnStarOverAlpha
-        Ca=listerp(CaMach,Ca0,M)
+        Ca=Ca0(M)
     elif sustainer_attached:
         cn0=Cn0Sust
-        cnStarOverAlpha=listerp(CnAlpha,CnStarOverAlphaSust,beta_deg)
+        cnStarOverAlpha=CnStarOverAlphaSust(beta_deg)
         Cn=cn0+beta_deg*cnStarOverAlpha
         Ca=CaSustainer
     else:
