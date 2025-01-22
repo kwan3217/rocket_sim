@@ -109,18 +109,33 @@ class Universe:
                           values are allowed.
         """
         def F(*,t:float,y:np.ndarray,dt:float,major_step:bool,vehicle:Vehicle):
-            a=vehicle.generate_acc(t=t,dt=dt,y=y,major_step=major_step)
+            a_thr=vehicle.generate_acc(t=t,dt=dt,y=y,major_step=major_step)
+            a=a_thr.copy()
             m = vehicle.mass()
+            Fs=[]
+            accs=[]
             for force in self.forces:
                 this_F=force(t=t,dt=dt,y=y,vehicle=vehicle)
+                Fs.append(this_F)
                 this_a=this_F/m
                 a+=this_a
             for acc in self.accs:
                 this_a=acc(t=t,dt=dt,y=y,vehicle=vehicle)
+                accs.append(this_a)
                 a+=this_a
+            if major_step:
+                vehicle.tlm_point.a_thr=a_thr
+                vehicle.tlm_point.Fs=Fs
+                vehicle.tlm_point.accs=accs
+                vehicle.tlm_point.mass=m
             return np.hstack((y[3:],a))
+        dt=direction/self.fps
         for vehicle in self.vehicles:
-            vehicle.y=rk4(F=F,t0=self.t(),y0=vehicle.y,dt=direction/self.fps,vehicle=vehicle)
+            vehicle.start_tlm_point(t=self.t(),dt=dt)
+            vehicle.tlm_point.y0=vehicle.y
+            vehicle.y=rk4(F=F,t0=self.t(),y0=vehicle.y,dt=dt,vehicle=vehicle)
+            vehicle.tlm_point.y1=vehicle.y
+            vehicle.finish_tlm_point()
         self.i_step+=direction
     def runto(self,*,t1:float):
         direction=-1 if t1<(self.t()-0.5/self.fps) else 1
