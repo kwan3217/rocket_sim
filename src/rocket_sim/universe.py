@@ -131,11 +131,11 @@ class ZeroGRange(Universe):
 
 
 class TestStand(ZeroGRange):
-    def step(self):
+    def step(self,direction:int=1):
         # Remember the original state of each vehicle
         old_ys=[vehicle.y for vehicle in self.vehicles]
         # Run the step which will move the vehicles
-        super().step()
+        super().step(direction=direction)
         # Move the vehicles back
         for vehicle,y in zip(self.vehicles,old_ys):
             vehicle.y=y
