@@ -5,7 +5,6 @@ Created: 1/19/25
 """
 import re
 from collections import namedtuple
-from dataclasses import dataclass
 from math import isclose
 from typing import Callable
 
@@ -147,24 +146,6 @@ class Voyager(Vehicle):
         for i_engine,(e,b) in self.i_eb.items():
             self.engines[i_engine].throttle=1 if self.t_cb[b,0]<=t<self.t_cb[b,1] else 0
         self.stages[0].attached=(t<self.tsep_pm)
-
-
-@dataclass
-class TlmPoint:
-    t:float
-    y:np.ndarray
-    mass:float
-    thrust:float
-    dir:np.ndarray
-
-
-def tlm(*, t: float, dt: float, y: np.ndarray, major_step: bool, vehicle: Vehicle):
-    if major_step:
-        vehicle.tlm.append(TlmPoint(t=t,
-                                    y=y.copy(),
-                                    mass=vehicle.mass(),
-                                    thrust=vehicle.thrust_mag(t=t, dt=dt, y=y, major_step=False),
-                                    dir=vehicle.thrust_dir(t=t,dt=dt,y=y, major_step=False)))
 
 
 def prograde_guide(*,t:float,y:np.ndarray,dt:float,major_step:bool,vehicle:Vehicle):
