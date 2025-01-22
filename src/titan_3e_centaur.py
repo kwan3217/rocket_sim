@@ -28,22 +28,22 @@ class Titan3E(Vehicle):
         # Stage 1 has by-the-book dry mass with prop residual added,
         # and prop masses and performance from the tc flight reports
         # Loaded oxidizer and fuel. Input value is in lbm
-        self.mprop1_loaded={6:168446+89438}[tc_id]*kg_per_lbm
+        self.mprop1_loaded={6:168446+89438,7:168482+88586}[tc_id]*kg_per_lbm
         # Residual. Document implies the engine shut down due to
         # oxidizer depletion (good to the last drop) with this
         # much fuel left, which will be accounted as dry mass
-        self.mprop1_resid={6:898}[tc_id]*kg_per_lbm
+        self.mprop1_resid={6:898,7:174}[tc_id]*kg_per_lbm
         self.stage1=Stage(total=self.mprop1_loaded-self.mprop1_resid,dry=15000*kg_per_lbm+self.mprop1_resid,name=f"TC-{self.tc_id} stage 1")
-        self.e1_thrust10={6:519484}[tc_id]*N_per_lbf
-        self.e1_ve0={6:301.49}[tc_id]*g0
+        self.e1_thrust10={6:519484,7:538598}[tc_id]*N_per_lbf
+        self.e1_ve0={6:301.49,7:302.54}[tc_id]*g0
         self.engine1=Engine(thrust10=self.e1_thrust10,ve0=self.e1_ve0,name=f"TC-{self.tc_id} stage 1 LR-87")
         # Stage 2 is done the same way as stage 1
-        self.mprop2_loaded={6:43064+23883}[tc_id]*kg_per_lbm
+        self.mprop2_loaded={6:43064+23883,7:42981+24098}[tc_id]*kg_per_lbm
         # Stage 2 residual on TC-6 (Voyager 1) was over a ton of
         # oxidizer due to an anomalous restriction in the oxidizer
         # flow. This almost caused the mission to fail, and would
         # have caused Voyager 2 to fail.
-        self.mprop2_resid={6:2331}[tc_id]*kg_per_lbm
+        self.mprop2_resid={6:2331,7:197}[tc_id]*kg_per_lbm
         self.stage2=Stage(total=self.mprop2_loaded-self.mprop2_resid,dry=6000*kg_per_lbm+self.mprop2_resid,name=f"TC-{self.tc_id} stage 2")
         # Because of the oxidizer restriction, the TC-6 stage 2
         # engine ran fuel-rich, lowering thrust and increasing
@@ -52,8 +52,8 @@ class Titan3E(Vehicle):
         # Centaur was able to make up the difference, but only
         # because it had propellant reserve for later in the launch
         # window and it launched right at window open.
-        self.e2_thrust10={6:99622}[tc_id]*N_per_lbf
-        self.e2_ve0={6:319.46}[tc_id]*g0
+        self.e2_thrust10={6:99622,7:102408}[tc_id]*N_per_lbf
+        self.e2_ve0={6:319.46,7:319.05}[tc_id]*g0
         self.engine2=Engine(thrust10=self.e2_thrust10,ve0=self.e2_ve0,name=f"TC-{self.tc_id} stage 1 LR-91")
         self.interstage_and_shroud=Stage(total=10900*kg_per_lbm,prop=0,name="Interstage and Shroud")
         vgr=Voyager(vgr_id=self.vgr_id)
