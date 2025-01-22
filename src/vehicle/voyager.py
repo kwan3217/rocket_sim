@@ -131,8 +131,7 @@ class Voyager(Vehicle):
         self.centaur=Stage(dry=4400 * kg_per_lbm + self.c_resid, prop=self.c_mprop - self.c_resid, name=f"Centaur D-1T {vgr_id + 5}")
         self.eb={eb:Engine(thrust10=thr,ve0=self.ve_eb[eb],name=f"Centaur RL-10 C-{eb[0]} for burn {eb[1]}") for eb,thr in self.thrust_eb.items()}
         super().__init__(stages=[self.centaur,self.pm,self.mm],
-                         engines=[(self.pm_engine,1)]+[(engine,0) for eb,engine in self.eb.items()],
-                         extras=[tlm])
+                         engines=[(self.pm_engine,1)]+[(engine,0) for eb,engine in self.eb.items()])
         self.i_epm=0
         self.i_eb={1:(1,1),2:(1,2),3:(2,1),4:(2,2)}
         self.i_centaur=0
