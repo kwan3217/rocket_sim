@@ -112,9 +112,9 @@ class Universe:
             a=vehicle.generate_acc(t=t,dt=dt,y=y,major_step=major_step)
             m = vehicle.mass()
             for force in self.forces:
-                a+=force(t=t,dt=dt,y=y)/m
+                a+=force(t=t,dt=dt,y=y,vehicle=vehicle)/m
             for acc in self.accs:
-                a+=acc(t=t,dt=dt,y=y)
+                a+=acc(t=t,dt=dt,y=y,vehicle=vehicle)
             return np.hstack((y[3:],a))
         for vehicle in self.vehicles:
             vehicle.y=rk4(F=F,t0=self.t(),y0=vehicle.y,dt=direction/self.fps,vehicle=vehicle)
