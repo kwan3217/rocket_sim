@@ -13,13 +13,8 @@ from rocket_sim.universe import Universe
 from rocket_sim.vehicle import Stage, Vehicle
 
 
-def tlm(*, t: float, dt: float, y: np.ndarray, major_step: bool, vehicle: Vehicle):
-    if major_step:
-        vehicle.tlm.append((t,y.copy(),vehicle.mass(),vehicle.thrust_mag(t=t,dt=dt,y=y,major_step=False)))
-
-
 def plot_tlm(vehicle:Vehicle):
-    states=np.array([y for t,y,mass,thr_mag in vehicle.tlm])
+    states=np.array([tlm_point.y0 for t,tlm_point in vehicle.tlm_points.items()])
     plt.figure("pos")
     plt.plot(states[:,0],states[:,1],label='r')
     plt.axis('equal')
@@ -36,7 +31,7 @@ def rose():
 
     :return: A Vehicle instance representing the rose with no stages or engines.
     """
-    rose = Vehicle(stages=[Stage(dry=1, prop=0)], engines=[], extras=[tlm])
+    rose = Vehicle(stages=[Stage(dry=1, prop=0)], engines=[])
     return rose
 
 
