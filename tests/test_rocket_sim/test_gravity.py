@@ -14,7 +14,7 @@ from rocket_sim.vehicle import Stage, Vehicle
 
 
 def plot_tlm(vehicle:Vehicle):
-    states=np.array([tlm_point.y0 for t,tlm_point in vehicle.tlm_points.items()])
+    states=np.array([tlm_point.y0 for tlm_point in vehicle.tlm_points])
     plt.figure("pos")
     plt.plot(states[:,0],states[:,1],label='r')
     plt.axis('equal')

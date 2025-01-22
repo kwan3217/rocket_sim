@@ -14,13 +14,13 @@ from vehicle.titan_3e_centaur import Titan3E
 
 
 def plot_tlm(vehicle:Vehicle,tc_id:int):
-    ts=np.array([t for t in vehicle.tlm_points.keys()])
-    states=np.array([tlm_point.y0 for t,tlm_point in vehicle.tlm_points.items()])
-    masses=np.array([tlm_point.mass for t,tlm_point in vehicle.tlm_points.items()])
-    a_thr_mags=np.array([vlength(tlm_point.a_thr) for t,tlm_point in vehicle.tlm_points.items()])
-    drag_mags=np.array([tlm_point.Fs[0][2] if len(tlm_point.Fs)>0 else 0.0 for t,tlm_point in vehicle.tlm_points.items()])
+    ts=np.array([tlm_point.t for tlm_point in vehicle.tlm_points])
+    states=np.array([tlm_point.y0 for tlm_point in vehicle.tlm_points])
+    masses=np.array([tlm_point.mass for tlm_point in vehicle.tlm_points])
+    a_thr_mags=np.array([vlength(tlm_point.a_thr) for tlm_point in vehicle.tlm_points])
+    drag_mags=np.array([tlm_point.Fs[0][2] if len(tlm_point.Fs)>0 else 0.0 for tlm_point in vehicle.tlm_points])
     a_drag_mags=drag_mags/masses
-    a_grav_mags=np.array([tlm_point.accs[0][2] for t,tlm_point in vehicle.tlm_points.items()])
+    a_grav_mags=np.array([tlm_point.accs[0][2] for tlm_point in vehicle.tlm_points])
     a_mags=a_thr_mags+a_drag_mags+a_grav_mags
     plt.figure("Vehicle telemetry")
     plt.subplot(4,1,1)
