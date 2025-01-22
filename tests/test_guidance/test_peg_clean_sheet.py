@@ -7,7 +7,7 @@ import numpy as np
 from kwanmath.vector import vnormalize, vdot
 from matplotlib import pyplot as plt
 
-from peg_clean_sheet import calcAB, b, c, calcT_int, a
+from guidance.peg_clean_sheet import calcAB, b, c, calcT_int, a
 
 
 def test_calcAB():

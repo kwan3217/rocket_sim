@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 from rocket_sim.universe import VerticalRange
 from rocket_sim.vehicle import Vehicle
-from titan_3e_centaur import Titan3E
+from vehicle.titan_3e_centaur import Titan3E
 
 def plot_tlm(vehicle:Vehicle,tc_id:int):
     ts=np.array([t for t,y,mass,thr_mag in vehicle.tlm])

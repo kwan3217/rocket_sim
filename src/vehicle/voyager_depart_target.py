@@ -389,8 +389,8 @@ def target_centaur2(*,simt1:float,y1:np.ndarray,export:bool=False, fps1:int=10,f
     #       will drain exactly as fast as before.
     #initial_guess=np.zeros(4)
     #                dpitch               dyaw                   dthr                pitchrate
-    #initial_guess=[-4.4164552842503e+00,-4.3590393660760e-02,-9.6115297747416e-03,4.8457186584881e-03] #Best Voyager 1 result
-    initial_guess=[                0e+00, 1.0e+1                 ,0.0                   ,0.0 ] #Initial Voyager 2 guess
+    initial_guess={1:[-4.4164552842503e+00,-4.3590393660760e-02,-9.6115297747416e-03,4.8457186584881e-03], #Best Voyager 1 result
+                   2:[-1.3433920246681e+01, 9.0870458935636e+00,-2.2020571000027e-02,5.1374694020877e-02]}[vgr_id] #Best Voyager 2 result
 
     bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(-1,1)]  # Freeze yaw rate at 0
     if optimize:
