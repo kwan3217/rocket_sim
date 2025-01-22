@@ -4,7 +4,6 @@ Engine that uses a thrust curve to control its thrust as a function of simt
 Created: 1/21/25
 """
 import numpy as np
-import scipy
 from matplotlib import pyplot as plt
 
 from rocket_sim.universe import TestStand, ZeroGRange
@@ -78,13 +77,13 @@ def main():
     # F1 from initial sea level thrust lbf, table I.
     # F0 from peak of thrust curve from figure 7. Peak
     # thrust is in the startup transient.
-    srmL=SRM(mprop=197924,csv="data/UA1205 Thrust Curve.csv",name="Left SRM",F1F0=1199300/1293520,nozzle_cos=np.cos(np.deg2rad(6)))
-    srmR=SRM(mprop=197924,csv="data/UA1205 Thrust Curve.csv",name="Right SRM",F1F0=1199300/1293520,nozzle_cos=np.cos(np.deg2rad(6)))
-    print(srmL)
-    print(srmR.total_impulse())
-    srbL=Stage(prop=197924,dry=32447,name="Left SRB")
-    srbR=Stage(prop=197924,dry=32447,name="Right SRB")
-    vehicle=Vehicle(stages=[srbL,srbR],engines=[(srmL,0),(srmR,1)],extras=[tlm])
+    srm=SRM(mprop=197924,csv="data/UA1205 Thrust Curve.csv",name="Left SRM",F1F0=1199300/1293520,nozzle_cos=np.cos(np.deg2rad(6)))
+    print(srm)
+    print(srm.total_impulse())
+    srb=Stage(prop=197924,dry=32447,name="Left SRB")
+    vehicle=Vehicle(stages=[srb],engines=[(srm,0)],extras=[tlm])
+    print(vehicle.stages)
+    print(vehicle.engines)
     if False:
         stand=TestStand(vehicles=[vehicle],fps=10)
         stand.runto(t1=130.0)
