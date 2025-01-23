@@ -31,6 +31,7 @@ class Planet:
         :param mu: Gravitational constant in m**3/s**2
         :param re: Equatorial radius in m
         :param f:  Flattening ratio
+        j2 is calculated from geometric flattening and rotation rate
         """
         self.atm=atm
         self.w0=w0
