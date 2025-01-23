@@ -405,7 +405,7 @@ def target_centaur2(*,simt1:float,y1:np.ndarray,export:bool=False, fps1:int=10,f
     print("Optimal run: ")
     sc=sim_centaur2(simt1=simt1,y1=y1,**{k:v for k,v in zip(('dpitch','dyaw','dthr','pitchrate'),final_guess)},fps1=fps1,fps0=fps0,verbose=True,vgr_id=vgr_id)
     if export:
-        states=sorted([np.hstack((np.array(x.t),x.y)) for x in sc.tlm], key=lambda x:x[0])
+        states=sorted([np.hstack((np.array(x.t),x.y0)) for x in sc.tlm_points], key=lambda x:x[0])
         decimated_states=[]
         i=0
         di=1
