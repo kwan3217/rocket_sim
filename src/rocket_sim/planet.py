@@ -5,7 +5,7 @@ In fact, since the drag model is attitude dependent, we are going to include a l
 but we are not going to simulate attitude kinematics or dynamics -- just something like "the rocket is
 pointed exactly into the wind" or "the rocket is pointing exactly the direction guidance wants it to point"
 """
-from collections import namedtuple
+from dataclasses import dataclass
 
 import numpy as np
 from atmosphere.atmosphere import Atmosphere, SimpleEarthAtmosphere
@@ -14,8 +14,16 @@ from kwanmath.matrix import rot_z
 from spiceypy import pxform, furnsh, kclear
 
 
+@dataclass
 class Planet:
-    def __init__(self,*,M0_rb:np.array,atm:Atmosphere,w0:float,mu:float,re:float,f:float):
+    atm:Atmosphere
+    w0:float
+    mu:float
+    re:float
+    f:float
+    rp:float
+    j2:float
+    def __init__(self,*,atm:Atmosphere,w0:float,mu:float,re:float,f:float):
         """
 
         :param M0_rb: Matrix which transforms from planet body-fixed frame to global inertial frame. Can also be used
