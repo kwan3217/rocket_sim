@@ -26,16 +26,12 @@ class Planet:
     def __init__(self,*,atm:Atmosphere,w0:float,mu:float,re:float,f:float):
         """
 
-        :param M0_rb: Matrix which transforms from planet body-fixed frame to global inertial frame. Can also be used
-                      to transform between global inertial frame and an inertial frame frozen to match the reference
-                      frame at particular time (good for doing gravity field stuff)
         :param atm: Atmosphere model which takes altitude in m
         :param w0: Rotation rate of central body in rad/s
         :param mu: Gravitational constant in m**3/s**2
         :param re: Equatorial radius in m
         :param f:  Flattening ratio
         """
-        self.M0_rb=M0_rb
         self.atm=atm
         self.w0=w0
         self.mu=mu
@@ -47,9 +43,6 @@ class Planet:
         twoq0=(1+3/ep**2)*np.arctan(ep)-3/ep
         cbar20=((4*w0**2*re**3*e**3)/(15*mu*twoq0)-e**2)/(3*np.sqrt(5))
         self.j2=-cbar20*np.sqrt(5)
-    def M_rb(self,*,t_micros:int):
-        M_fb=rot_z(t_micros*self.w0/1_000_000)
-        return self.M0_rb @ M_fb
     def b2lla(self,rb:np.array,centric:bool=False,deg:bool=False):
         return xyz2lla(centric=centric,deg=deg,xyz=rb,re=self.re,rp=self.rp,east=True)
     def lla2b(self,lat_deg:float=None,lat_rad:float=None,
