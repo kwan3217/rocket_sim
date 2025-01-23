@@ -22,9 +22,11 @@ from scipy.optimize import minimize
 from spiceypy import str2et, pxform, timout
 
 import voyager
+
+from guidance.orbit import dprograde_guide
 from rocket_sim.gravity import SpiceTwoBody, SpiceJ2, SpiceThirdBody
 from rocket_sim.universe import Universe
-from voyager import Voyager, horizons_data, prograde_guide, yaw_rate_guide, seq_guide, \
+from voyager import Voyager, horizons_data, \
     simt_track_prePM, target_a_prePM, target_e_prePM, target_i_prePM, target_lan_prePM, \
     simt_track_park,  target_a_park,  target_e_park, target_i_park, target_c3_park, \
     init_spice, horizons_et, voyager_et0
@@ -63,10 +65,10 @@ def sim_pm(*,dpitch:float=0.0, dthr:float=0.0, dyaw:float=0.0, yawrate:float=0.0
     sc.stages[sc.i_pm].prop_mass=0
     sim.runto(t1=simt_track_prePM[vgr_id])
     print("Final state (simt, ICRF, SI): ")
-    print(f"  simt:  {sc.tlm[-1].t: .13e}  rx:   {sc.tlm[-1].y[0]: .13e}  ry:   {sc.tlm[-1].y[1]: .13e}  rz:   {sc.tlm[-1].y[2]: .13e}")
-    print(f"        {sc.tlm[-1].t.hex()}       {  sc.tlm[-1].y[0].hex()}      {  sc.tlm[-1].y[1].hex()}      {  sc.tlm[-1].y[2].hex()}")
-    print(f"                               vx:   {sc.tlm[-1].y[3]: .13e}  vy:   {sc.tlm[-1].y[4]: .13e}  vz:   {sc.tlm[-1].y[5]: .13e}")
-    print(f"                                    {  sc.tlm[-1].y[3].hex()}       {  sc.tlm[-1].y[4].hex()}       {  sc.tlm[-1].y[5].hex()}")
+    print(f"  simt:  {sc.tlm_points[-1].t: .13e}  rx:   {sc.tlm_points[-1].y0[0]: .13e}  ry:   {sc.tlm_points[-1].y0[1]: .13e}  rz:   {sc.tlm_points[-1].y0[2]: .13e}")
+    print(f"        {sc.tlm_points[-1].t.hex()}       {  sc.tlm_points[-1].y0[0].hex()}      {  sc.tlm_points[-1].y0[1].hex()}      {  sc.tlm_points[-1].y0[2].hex()}")
+    print(f"                               vx:   {sc.tlm_points[-1].y0[3]: .13e}  vy:   {sc.tlm_points[-1].y0[4]: .13e}  vz:   {sc.tlm_points[-1].y0[5]: .13e}")
+    print(f"                                    {  sc.tlm_points[-1].y0[3].hex()}       {  sc.tlm_points[-1].y0[4].hex()}       {  sc.tlm_points[-1].y0[5].hex()}")
     if verbose:
         ts = np.array([x.t for x in sc.tlm])
         states = np.array([x.y for x in sc.tlm])
@@ -126,7 +128,7 @@ def sim_centaur2(*,simt1:float,y1:np.ndarray,dpitch:float, dthr:float, dyaw:floa
     print(f"        {simt1.hex()}       {  y1[0].hex()}      {  y1[1].hex()}      {  y1[2].hex()}")
     print(f"                               vx:   {y1[3]: .13e}  vy:   {y1[4]: .13e}  vz:   {y1[5]: .13e}")
     print(f"                                    {  y1[3].hex()}       {  y1[4].hex()}       {  y1[5].hex()}")
-    sc.guide = voyager.dprograde_guide(dpitch=dpitch, dyaw=dyaw, pitchrate=pitchrate,t0=sc.t_cb[(2,0)])
+    sc.guide = dprograde_guide(dpitch=dpitch, dyaw=dyaw, pitchrate=pitchrate,t0=sc.t_cb[(2,0)])
     # Tweak engine efficiency
     for i,(e,b) in sc.i_eb.items():
         if b==2:
@@ -140,24 +142,23 @@ def sim_centaur2(*,simt1:float,y1:np.ndarray,dpitch:float, dthr:float, dyaw:floa
     sc.stages[sc.i_centaur].prop_mass=0
     sim.runto(t1=sc.t_cb[(2,0)]-10)
     print("State just prior to Centaur burn 2 (simt, ICRF, SI): ")
-    print(f"  simt:  {sc.tlm[-1].t: .13e}  rx:   {sc.tlm[-1].y[0]: .13e}  ry:   {sc.tlm[-1].y[1]: .13e}  rz:   {sc.tlm[-1].y[2]: .13e}")
-    print(f"        {sc.tlm[-1].t.hex()}       {  sc.tlm[-1].y[0].hex()}      {  sc.tlm[-1].y[1].hex()}      {  sc.tlm[-1].y[2].hex()}")
-    print(f"                               vx:   {sc.tlm[-1].y[3]: .13e}  vy:   {sc.tlm[-1].y[4]: .13e}  vz:   {sc.tlm[-1].y[5]: .13e}")
-    print(f"                                    {  sc.tlm[-1].y[3].hex()}       {  sc.tlm[-1].y[4].hex()}       {  sc.tlm[-1].y[5].hex()}")
+    print(f"  simt:  {sc.tlm_points[-1].t: .13e}  rx:   {sc.tlm_points[-1].y0[0]: .13e}  ry:   {sc.tlm_points[-1].y0[1]: .13e}  rz:   {sc.tlm_points[-1].y0[2]: .13e}")
+    print(f"        {sc.tlm_points[-1].t.hex()}       {  sc.tlm_points[-1].y0[0].hex()}      {  sc.tlm_points[-1].y0[1].hex()}      {  sc.tlm_points[-1].y0[2].hex()}")
+    print(f"                               vx:   {sc.tlm_points[-1].y0[3]: .13e}  vy:   {sc.tlm_points[-1].y0[4]: .13e}  vz:   {sc.tlm_points[-1].y0[5]: .13e}")
+    print(f"                                    {  sc.tlm_points[-1].y0[3].hex()}       {  sc.tlm_points[-1].y0[4].hex()}       {  sc.tlm_points[-1].y0[5].hex()}")
     sim.change_fps(fps0)
     sim.runto(t1=simt_track_park[vgr_id])
     print("State just after Centaur burn 1 (simt, ICRF, SI): ")
-    print(f"  simt:  {sc.tlm[-1].t: .13e}  rx:   {sc.tlm[-1].y[0]: .13e}  ry:   {sc.tlm[-1].y[1]: .13e}  rz:   {sc.tlm[-1].y[2]: .13e}")
-    print(f"        {sc.tlm[-1].t.hex()}       {  sc.tlm[-1].y[0].hex()}      {  sc.tlm[-1].y[1].hex()}      {  sc.tlm[-1].y[2].hex()}")
-    print(f"                               vx:   {sc.tlm[-1].y[3]: .13e}  vy:   {sc.tlm[-1].y[4]: .13e}  vz:   {sc.tlm[-1].y[5]: .13e}")
-    print(f"                                    {  sc.tlm[-1].y[3].hex()}       {  sc.tlm[-1].y[4].hex()}       {  sc.tlm[-1].y[5].hex()}")
+    print(f"  simt:  {sc.tlm_points[-1].t: .13e}  rx:   {sc.tlm_points[-1].y0[0]: .13e}  ry:   {sc.tlm_points[-1].y0[1]: .13e}  rz:   {sc.tlm_points[-1].y0[2]: .13e}")
+    print(f"        {sc.tlm_points[-1].t.hex()}       {  sc.tlm_points[-1].y0[0].hex()}      {  sc.tlm_points[-1].y0[1].hex()}      {  sc.tlm_points[-1].y0[2].hex()}")
+    print(f"                               vx:   {sc.tlm_points[-1].y0[3]: .13e}  vy:   {sc.tlm_points[-1].y0[4]: .13e}  vz:   {sc.tlm_points[-1].y0[5]: .13e}")
+    print(f"                                    {  sc.tlm_points[-1].y0[3].hex()}       {  sc.tlm_points[-1].y0[4].hex()}       {  sc.tlm_points[-1].y0[5].hex()}")
     if verbose:
-        ts = np.array([x.t for x in sc.tlm])
-        states = np.array([x.y for x in sc.tlm])
-        masses = np.array([x.mass for x in sc.tlm])
-        thrusts = np.array([x.thrust for x in sc.tlm])
-        accs = thrusts / masses
-        elorbs = [elorb(x.y[:3], x.y[3:], l_DU=voyager.EarthRe, mu=voyager.EarthGM, t0=x.t) for x in sc.tlm]
+        ts = np.array([x.t for x in sc.tlm_points])
+        states = np.array([x.y0 for x in sc.tlm_points])
+        masses = np.array([x.mass for x in sc.tlm_points])
+        accs = np.array([x.a_thr for x in sc.tlm_points])
+        elorbs = [elorb(x.y0[:3], x.y0[3:], l_DU=voyager.EarthRe, mu=voyager.EarthGM, t0=x.t) for x in sc.tlm_points]
         eccs = np.array([elorb.e for elorb in elorbs])
         incs = np.array([np.rad2deg(elorb.i) for elorb in elorbs])
         smis = np.array([elorb.a for elorb in elorbs]) / 1852  # Display in nmi to match document
