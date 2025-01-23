@@ -70,4 +70,3 @@ def test_drag():
             ])
             range.runto(t1=130.0)
         plot_tlm(titan3E,tc_id=1 if drag_enabled else 0)
-    plt.show()

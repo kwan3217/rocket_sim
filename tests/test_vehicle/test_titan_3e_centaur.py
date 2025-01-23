@@ -12,7 +12,7 @@ from rocket_sim.universe import VerticalRange, TestStand
 from rocket_sim.vehicle import Vehicle, g0
 from vehicle.titan_3e_centaur import Titan3E
 
-def plot_tlm(vehicle:Vehicle,tc_id:int):
+def plot_tlm_vertical(vehicle:Vehicle,tc_id:int):
     ts=np.array([tlm_point.t for tlm_point in vehicle.tlm_points])
     states=np.array([tlm_point.y0 for tlm_point in vehicle.tlm_points])
     masses=np.array([tlm_point.mass for tlm_point in vehicle.tlm_points])
@@ -51,5 +51,7 @@ def test_titan3E(static:bool):
         else:
             range=VerticalRange(vehicles=[titan3E],fps=10,forces=[])
             range.runto(t1=130.0)
-        plot_tlm(titan3E,tc_id=tc_id)
-    plt.show()
+        plot_tlm_vertical(titan3E,tc_id=tc_id)
+    plt.pause(0.1)
+
+
