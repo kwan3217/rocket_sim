@@ -72,18 +72,74 @@ class Planet:
         return vcross(np.array([0,0,self.w0]),rj.reshape(-1))
 
 
-        Note: You can use the inverse of this to do the inverse transformation, but
-              this matrix is NOT orthonormal, so you have to do a proper inverse, not
-              just a transpose.
+class SpicePlanet(Planet):
+    def __init__(self,*,spice_id:int,atm:Atmosphere,bf_frame:str=None):
         """
-        axis=np.array([[0.0],[0.0],[self.w0]])
-        M_rb=self.M_rb(t_micros=t_micros)
-        zcross=np.array([[ 0.0,-1.0, 0.0],
-                         [ 1.0, 0.0, 0.0],
-                         [ 0.0, 0.0, 0.0]])
-        N_rb=self.w0*zcross@M_rb
-        return np.vstack((np.hstack((M_rb,np.zeros((3,3)))),
-                          np.hstack((N_rb,M_rb))))
+        Create a planet from its Spice information, along with some extra stuff.
+        :param spice_id: Spice ID of planet. PCK files with this body radii,
+                         rotation model, GM, and J2 must be loaded first.
+        :param atm: Atmosphere model to use
+        """
+        re,_,rp=gdpool(f"BODY{spice_id}_RADII",0,3)*1000
+        f=1-(rp/re)
+        mu=gdpool(f"BODY{spice_id}_GM",0,1)[0]*1000**3
+        atm=atm
+        # First - I know that IAU_EARTH is not recommended. This
+        # is a low-precision project, and I don't need the binary
+        # Earth orientation kernels. Second, what we are concerned
+        # with here is the rotation rate. The kernel constant array
+        # BODYnnn_PM is the position of the prime meridian as a polynomial
+        # with constant, linear, quadratic, etc coefficient (most
+        # planets have zero for quadratic and above). The input is
+        # time in days of 86,400 TDB seconds from the J2000 epoch,
+        # 2000-01-01T12:00:00.000 TDB. self.w0 (omega-0) is in
+        # radians per second, so we convert here.
+        w0=np.deg2rad(gdpool(f"BODY{spice_id}_PM",0,3)[1])/86400.0
+        j2=gdpool(f"BODY{spice_id}_J2",0,1)[0]
+        super().__init__(atm=atm,w0=w0,mu=mu,re=re,f=f)
+        self.j2=j2
+        self.bf_frame=bf_frame
+    def launchpad(self,*,lat:float,lon:float,alt:float,deg:bool,et:float):
+        """
+        Calculate the inertial state of a launch site, given its body-fixed
+        geodetic coordinates
+        :param lat: Latitude of launch site
+        :param lon: Longitude of launch site
+        :param alt: Altitude of launch site above ellipsoid
+        :param deg: If True, lat and lon are in degrees, if False then radians
+        :param et: Spice ET of launch, used to calculate the rotation from designated
+                   body frame to J2000/ICRF, roughly mean equator and equinox at J2000
+                   epoch, 2000-01-01T12:00:00 TDB.
+        :return: State vector of launch site in inertial J2000/ICRF
+        We perform the following inaccurate steps to bridge the fact that the equator
+        precessed from 1977 to 2000:
+        1. Transform LLA to XYZ in body frame
+        2. Calculate matrix from body frame to J2000
+        3. Rotate body frame vector to J2000
+        4. Calculate wind vector in J2000, assuming pole is perfectly aligned to z axis
+        """
+        if deg:
+            lat=np.deg2rad(lat)
+            lon=np.deg2rad(lon)
+        rb=lla2xyz(lat_rad=lat,lon_rad=lon,alt=alt,re=self.re,rp=self.rp,centric=False).reshape(-1,1)
+        Mjb=pxform(self.bf_frame,'J2000',et)
+        rj=(Mjb @ rb).reshape(-1)
+        vj=self.wind(rj).reshape(-1)
+        return np.hstack((rj,vj))
+    def downrange_frame(self,rj:np.ndarray,azimuth:float,deg:bool=True):
+        """
+        Return a matrix which transforms a vector in the downrange frame to
+        one in the inertial frame
+        :param rj: Location in the inertial frame
+        :param azimuth: range azimuth east of true north
+        :param deg: If true, azimuth is in degrees, otherwise radians
+        :return: Mjd -- A matrix which transforms the downrange frame to the inertial frame
+
+        Downrange frame has:
+          * qbar - First basis vector points downrange in the local horizon plane
+          * hbar - Second basis vector points crossrange to the left, in the local
+                   horizon plane. This is the north side of an easterly launch
+          * rbar - Third basis is vertical
 
 
 class Earth(Planet):
