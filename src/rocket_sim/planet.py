@@ -52,26 +52,25 @@ class Planet:
                      centric:bool=False):
         return lla2xyz(centric=centric,lat_deg=lat_deg,lat_rad=lat_rad,
                                        lon_deg=lon_deg,lon_rad=lon_rad,alt=alt,re=self.re,rp=self.rp,east=True)
-    def gravity(self,*,t_micros:int,x:np.array)->np.array:
+    def wind(self,rj:np.array):
         """
-        Calculate gravitational acceleration at given state vector caused by this planet
+        Calculate the motion of the body-fixed frame relative to the inertial
+        frame at a given point in the inertial frame. The atmosphere is
+        relatively fixed compared to the ground (perfectly so where the wind
+        speed is zero) so the velocity of the air relative to the reference
+        frame is a vector in a plane parallel to the equator (so zero polar
+        component) and a magnitude of hundreds or thousands of meters per
+        second near the equator depending on the planet.
 
-        :param t_micros:
-        :param x:
-        :return: acceleration in m/s
-        """
-        M_fr=self.M_rb(t_micros=t_micros).T
-        xf=np.vstack((M_fr@x[:3,0],M_fr@x[:]))
-        return aTwoBody(xf,gm=self.mu)+aJ2(xf,j2=self.j2,gm=self.mu,re=self.re)
-    def Ms_rb(self,*,t_micros:int)->np.array:
-        """
-        Return a matrix which transforms a state from body-fixed to reference,
-        including velocity (IE it handles the "wind")
+        :param rj: Position in the inertial reference frame
+        :return: Inertial wind speed at this location
 
-        :param t_micros:
-        :param x:
-        :return: 6x6 matrix that transforms position and velocity from body-fixed
-                 frame to inertial frame, including boost from rotation of planet
+        For now, we consider the body to have its center at zero and its polar
+        axis aligned with the Z axis. This is a small ~0.25deg error between
+        the actual rotation axis in 1977 and J2000/ICRF.
+        """
+        return vcross(np.array([0,0,self.w0]),rj.reshape(-1))
+
 
         Note: You can use the inverse of this to do the inverse transformation, but
               this matrix is NOT orthonormal, so you have to do a proper inverse, not
