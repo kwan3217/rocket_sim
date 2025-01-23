@@ -9,9 +9,9 @@ from dataclasses import dataclass
 
 import numpy as np
 from atmosphere.atmosphere import Atmosphere, SimpleEarthAtmosphere
-from kwanmath.geodesy import aTwoBody, aJ2, xyz2lla, lla2xyz
-from kwanmath.matrix import rot_z
-from spiceypy import pxform, furnsh, kclear
+from kwanmath.geodesy import xyz2lla, lla2xyz
+from kwanmath.vector import vcross, vnormalize, vdot
+from spiceypy import furnsh, kclear, gdpool, pxform
 
 
 @dataclass
