@@ -160,10 +160,10 @@ def f_drag(*,planet:Planet,clcd:Callable[...,tuple[float,float]],Sref:float)->Ca
                  ...
     """
     def inner(*,t:float,dt:float,y:np.ndarray,vehicle:Vehicle)->np.ndarray:
-        alt=planet.b2lla(rb=y).alt
+        alt=planet.b2lla(rb=y[:3]).alt
         air_props=planet.atm.calc_props(alt)
         rho=air_props.Density
-        wind=np.zeros(3) # Later we will calculate the wind
+        wind=planet.wind(y[:3]).reshape(-1)
         vrel=y[3:]-wind
         vrel_mag=vlength(vrel)
         if vrel_mag==0:

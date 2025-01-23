@@ -31,7 +31,7 @@ def pitch_program(*, planet: SpicePlanet, y0:np.ndarray, azimuth: float, deg: bo
     tpitch=lambda t:np.interp(t,np.array(ts),np.array(pitches),left=pitch0,right=pitches[-1])
     plt.figure("Pitch program")
     plt.plot(np.arange(0,140,0.1),np.rad2deg(tpitch(np.arange(0,140,0.1))))
-    plt.show()
+    plt.pause(0.1)
     def inner(*, t: float, y: np.ndarray, dt: float, major_step: bool, vehicle: Vehicle):
         pitch=tpitch(t)
         vhatd=np.array([[np.cos(pitch)],
