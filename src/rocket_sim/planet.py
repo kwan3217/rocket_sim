@@ -141,8 +141,31 @@ class SpicePlanet(Planet):
                    horizon plane. This is the north side of an easterly launch
           * rbar - Third basis is vertical
 
+        This uses a planetocentric vertical, rather than the more accurate planetodetic
+        vertical. It's pretty straightforward to do planetodetic but is quite a bit
+        more computationally intensive.
+        """
+        if deg:
+            azimuth=np.deg2rad(azimuth)
+        rbar=vnormalize(rj.reshape(-1,1))
+        zbar=np.array([[0],[0],[1]])
+        ebar=vnormalize(vcross(zbar,rj))
+        nbar=vnormalize(vcross(rbar,ebar))
+        assert vdot(nbar,zbar)>0,"nbar screwed up"
+        qbar= nbar*np.cos(azimuth)+ebar*np.sin(azimuth)
+        hbar= nbar*np.sin(azimuth)-ebar*np.cos(azimuth)
+        assert np.isclose(vdot(qbar,hbar),0),"qbar and hbar not perpendicular"
+        assert np.isclose(vdot(qbar,rbar),0),"qbar and rbar not perpendicular"
+        assert np.isclose(vdot(hbar,rbar),0),"hbar and rbar not perpendicular"
+        Mjd=np.hstack((qbar,hbar,rbar))
+        return Mjd
 
-class Earth(Planet):
+
+class Earth(SpicePlanet):
+    def __init__(self,atm:Atmosphere=None,bf_frame:str='IAU_EARTH'):
+        if atm is None:
+            atm=SimpleEarthAtmosphere()
+        super().__init__(spice_id=399,atm=atm,bf_frame=bf_frame)
     @staticmethod
     def gha0():
         """
@@ -169,9 +192,5 @@ class Earth(Planet):
         theta=360*((0.779_057_273_264+1.002_737_811_911_354_480*t_u)%1)
         print(f"{gmst_ref=},{theta=},{gmst_ref-theta=}")
         kclear()
-    def __init__(self,et0:float=None):
-        super().__init__(M0_rb=pxform("IAU_EARTH","J2000",et0) if et0 is not None else np.identity(3),
-                         atm=SimpleEarthAtmosphere(),
-                         w0=72.92115e-6,mu=3.986004418e14,re=6378137.0,f=1.0/298.257223563)
 
 
