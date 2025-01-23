@@ -287,12 +287,12 @@ def PEG_major_cycle(*,rv:np.array,vv:np.array,
     :param T: Old time-to-go
     :param ve: Effective exhaust velocity at new epoch
     :param a0: Acceleration due to thrust at new epoch
-    :param rT: Target distance from
-    :param rdotT:
-    :param vqT:
-    :param mu:
-    :param dt:
-    :return:
+    :param rT: Target distance from center
+    :param rdotT: Target vertical velocity
+    :param vqT: Target downrange velocity
+    :param mu: Central body gravitational constant
+    :param dt: Time since last step
+    :return: Tuple of new values of A, B, and T.
     """
     #Update the t=0 epoch
     T-=dt
@@ -300,4 +300,8 @@ def PEG_major_cycle(*,rv:np.array,vv:np.array,
     for i_iter in range(n_iters):
         A,B=calcAB(rv=rv,vv=vv,rT=rT,rdotT=rdotT,a0=a0,ve=ve,tau=tau,T=T)
         T=calcT(rv=rv,vv=vv,rT=rT,vqT=vqT,a0=a0,ve=ve,mu=mu,A=A,B=B,oldT=T)
+
+
+def peg_guide(*,planet:SpicePlanet,rT:float,rdotT:float,vqT:float):
+    def inner()
 
