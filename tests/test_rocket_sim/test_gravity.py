@@ -18,7 +18,6 @@ def plot_tlm(vehicle:Vehicle):
     plt.figure("pos")
     plt.plot(states[:,0],states[:,1],label='r')
     plt.axis('equal')
-    plt.show()
 
 
 @pytest.fixture

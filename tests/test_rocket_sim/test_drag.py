@@ -48,9 +48,9 @@ def plot_tlm(vehicle:Vehicle,tc_id:int):
 
 class FlatWorld(Planet):
     def __init__(self,*,atm:Atmosphere):
-        super().__init__(M0_rb=None,atm=atm,w0=0.0,mu=1.0,re=1000.0,f=0.0)
+        super().__init__(atm=atm,w0=0.0,mu=1.0,re=1000.0,f=0.0)
     def b2lla(self,rb:np.array,centric:bool=False,deg:bool=False):
-        return namedtuple('xyz2lla', ['lat', 'lon', 'alt'])(0,0,rb[3])
+        return namedtuple('xyz2lla', ['lat', 'lon', 'alt'])(0,0,rb[2])
 
 
 
@@ -70,4 +70,3 @@ def test_drag():
             ])
             range.runto(t1=130.0)
         plot_tlm(titan3E,tc_id=1 if drag_enabled else 0)
-    plt.show()

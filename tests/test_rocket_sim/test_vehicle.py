@@ -41,7 +41,7 @@ def plot_tlm(vehicle:Vehicle):
     plt.plot(states[:,5],label='vz')
     plt.figure("pos")
     plt.plot(states[:,2],label='rz')
-    plt.show()
+    plt.pause(0.1)
 
 
 Voyager1=Vehicle(stages=[Voyager1Stage,PMStage],engines=[(PMEngine,1)])
