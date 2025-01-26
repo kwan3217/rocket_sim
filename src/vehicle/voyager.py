@@ -13,138 +13,6 @@ from spiceypy import furnsh, gdpool, str2et
 from rocket_sim.vehicle import Vehicle, Stage, Engine, kg_per_lbm, g0, N_per_lbf
 
 
-class Voyager(Vehicle):
-    def __init__(self,*,vgr_id:int=1):
-        self.vgr_id=vgr_id
-        self.spice_id=-30-vgr_id
-
-        # From The Voyager Spacecraft, Gold Medal Lecture in Mech Eng, table 2 bottom line
-        # mm is the mission module, what would be known as the "spacecraft" after Earth departure.
-        self.mm_mtot = 825.4
-        self.mm_mprop = 103.4
-        self.mm = Stage(prop=self.mm_mprop, total=self.mm_mtot,name=f"Voyager {vgr_id} Mission Module")  # dry mass and RCS prop for Voyager
-        # Value from TC-7 Voyager 2 Flight Data Report, p10
-        self.mmpm_mtot = 4470 * kg_per_lbm
-        # pm is the propulsion module
-        self.pm_mtot = self.mmpm_mtot - self.mm_mtot
-        # Values from AIAA79-1334 Voyager Prop System, table 5
-        self.pm_mprop = [None,1045.9,1046.0][vgr_id]   # kg, SRM expelled mass
-        self.pm = Stage(prop=self.pm_mprop, total=self.pm_mtot,name=f"Voyager {vgr_id} Propulsion Module")
-        self.t_pm0 = [None,3722.2,3673.7][vgr_id]  # PM start from TC-6 timeline
-        self.t_pm1 = [None,3767.3,3715.7][vgr_id]  # PM burnout
-        dt_pm1 = self.t_pm1 - self.t_pm0
-        self.pm_Itot = [None,2895392,2897042][vgr_id]  # Table 5, total impulse calculated from tracking data, N*s
-        self.pm_ve = self.pm_Itot / self.pm_mprop  # Exhaust velocity, m/s
-        self.pm_F = self.pm_Itot / dt_pm1  # Mean thrust assuming rectangular thrust curve
-        self.pm_engine = Engine(thrust10=self.pm_F, ve0=self.pm_ve,name="Propulsion Module TE-M-364-4")
-        # All centaur stuff is for engine cn, burn bn
-        # Voyager 1 TC-6 from Table 8-4, p87 of flight data report
-        self.thrust_eb={}
-        self.thrust_eb[(1,1)]= [None,14807,15033][vgr_id] * N_per_lbf
-        self.thrust_eb[(1,2)]= [None,14883,15166][vgr_id] * N_per_lbf
-        self.thrust_eb[(2,1)]= [None,15073,15200][vgr_id] * N_per_lbf
-        self.thrust_eb[(2,2)]= [None,15242,15460][vgr_id] * N_per_lbf
-        self.ve_eb={}
-        self.ve_eb[(1,1)]= [None,441.5,441.8][vgr_id] * g0
-        self.ve_eb[(1,2)]= [None,441.7,441.5][vgr_id] * g0
-        self.ve_eb[(2,1)]= [None,441.1,442.0][vgr_id] * g0
-        self.ve_eb[(2,2)]= [None,441.3,441.4][vgr_id] * g0
-        # Mass mixture ratio - this many kg of oxidizer (LOX) is used for each kg of fuel (LH2)
-        self.mr_eb={}
-        self.mr_eb[(1,1)]=[None,4.90,5.08][vgr_id]
-        self.mr_eb[(1,2)]=[None,4.86,5.00][vgr_id]
-        self.mr_eb[(2,1)]=[None,5.03,4.98][vgr_id]
-        self.mr_eb[(2,2)]=[None,4.97,5.06][vgr_id]
-        # Centaur burn timing for centaur burn n start and end times (cbn[0|1])
-        self.t_cb={}
-        self.t_cb[(1,0)]=[None, 484.6, 478.7][vgr_id]
-        self.t_cb[(1,1)]=[None, 594.0, 580.6][vgr_id]
-        self.t_cb[(2,0)]=[None,3199.8,3148.5][vgr_id]
-        self.t_cb[(2,1)]=[None,3535.3,3488.0][vgr_id]
-        # Separation time of PM
-        self.tsep_pm=[None,3705.2,3657.7][vgr_id]
-        # Centaur residuals after burn 2, flight data report section p124 (V1) and p117 (V2)
-        self.c_lox_resid= [None,276,374][vgr_id] * kg_per_lbm
-        self.c_lh2_resid= [None, 36, 47][vgr_id] * kg_per_lbm
-        self.c_resid=self.c_lox_resid+self.c_lh2_resid
-        # Calculated results below
-        self.dt_cb={}
-        self.mdot_eb={}
-        self.mdotlox_eb={}
-        self.mdotlh2_eb={}
-        self.mprop_eb={}
-        self.mlox_eb={}
-        self.mlh2_eb={}
-        self.mdot_b={}
-        self.mdotlox_b={}
-        self.mdotlh2_b={}
-        self.mprop_b={}
-        self.mlox_b={}
-        self.mlh2_b={}
-        for i_burn in (1,2):
-            # Calculate each burn
-            self.dt_cb[i_burn]=self.t_cb[(i_burn,1)]-self.t_cb[(i_burn,0)] # Burn time for i_burn
-            for i_e in (1,2):
-                # Calculate each engine in each burn
-                eb=(i_e,i_burn)
-                self.mdot_eb[eb]=self.thrust_eb[eb]/self.ve_eb[eb]  # Prop mass flow rate
-                self.mdotlox_eb[eb]=self.mdot_eb[eb]*self.mr_eb[eb]/(1+self.mr_eb[eb]) # oxidizer flow rate
-                self.mdotlh2_eb[eb]=self.mdot_eb[eb]*1             /(1+self.mr_eb[eb]) # fuel flow rate
-                assert isclose(self.mdotlox_eb[eb]/self.mdotlh2_eb[eb],self.mr_eb[eb]),f"Mixture ratio for C-{i_e}, burn {i_burn} doesn't check out"
-                self.mprop_eb[eb]=self.mdot_eb[eb]*self.dt_cb[i_burn]     # Propellant used
-                self.mlox_eb[eb]=self.mdotlox_eb[eb]*self.dt_cb[i_burn]   # oxidizer used
-                self.mlh2_eb[eb]=self.mdotlh2_eb[eb]*self.dt_cb[i_burn]   # fuel used
-                assert isclose(self.mprop_eb[eb],self.mlox_eb[eb]+self.mlh2_eb[eb]),"Mixture ratio for c-1 doesn't check out"
-                assert isclose(self.mlox_eb[eb]/self.mlh2_eb[eb],self.mr_eb[eb]),"Mixture ratio for c-1 doesn't check out"
-            #   totals for burn
-            self.mdot_b[i_burn]=self.mdot_eb[(1,i_burn)]+self.mdot_eb[(2,i_burn)]
-            self.mdotlox_b[i_burn]=self.mdotlox_eb[(1,i_burn)]+self.mdotlox_eb[(1,i_burn)]
-            self.mdotlh2_b[i_burn]=self.mdotlh2_eb[(1,i_burn)]+self.mdotlh2_eb[(1,i_burn)]
-            self.mprop_b[i_burn] = self.mprop_eb[(1, i_burn)] + self.mprop_eb[(2, i_burn)]
-            self.mlox_b[i_burn] = self.mlox_eb[(1, i_burn)] + self.mlox_eb[(1, i_burn)]
-            self.mlh2_b[i_burn] = self.mlh2_eb[(1, i_burn)] + self.mlh2_eb[(1, i_burn)]
-        # Total propellant in stage
-        self.c_mlox=self.mlox_b[1]+self.mlox_b[2]+self.c_lox_resid
-        self.c_mlh2=self.mlh2_b[1]+self.mlh2_b[2]+self.c_lh2_resid
-        self.c_mprop=self.c_mlox+self.c_mlh2
-        # Predict time to depletion of each component
-        self.lox_t_depl=self.c_lox_resid/self.mdotlox_b[2]
-        self.lh2_t_depl=self.c_lh2_resid/self.mdotlh2_b[2]
-        # Check which is the limiting factor, and how much of the other would be left
-        if self.lox_t_depl<self.lh2_t_depl:
-            print("LOX is limiting factor")
-            self.lox_depl_resid=0
-            self.lh2_depl_resid=(self.lh2_t_depl-self.lox_t_depl)*self.mdotlh2_b[2]
-            self.t_depl=self.lox_t_depl
-        else:
-            print("LH2 is limiting factor")
-            self.lh2_depl_resid = 0
-            self.lox_depl_resid = (self.lox_t_depl - self.lh2_t_depl) * self.mdotlox_b[2]
-            self.t_depl = self.lh2_t_depl
-        # Now build the engines and stage. We actually give it 4 engines, since we have
-        # different stats for each burn. Account the residual as part of the structure
-        # so that the "tank" is empty after the expected burns.
-        self.centaur=Stage(dry=4400 * kg_per_lbm + self.c_resid, prop=self.c_mprop - self.c_resid, name=f"Centaur D-1T {vgr_id + 5}")
-        self.eb={eb:Engine(thrust10=thr,ve0=self.ve_eb[eb],name=f"Centaur RL-10 C-{eb[0]} for burn {eb[1]}") for eb,thr in self.thrust_eb.items()}
-        super().__init__(stages=[self.centaur,self.pm,self.mm],
-                         engines=[(self.pm_engine,1)]+[(engine,0) for eb,engine in self.eb.items()])
-        self.i_epm=0
-        self.i_eb={1:(1,1),2:(1,2),3:(2,1),4:(2,2)}
-        self.i_centaur=0
-        self.i_pm=1
-        self.i_mm=2
-    def sequence(self, *, t: float, y: np.ndarray, dt: float):
-        # Sequence the PM engine
-        if self.t_pm0 <= t < self.t_pm1:
-            self.engines[self.i_epm].throttle = 1
-        else:
-            self.engines[self.i_epm].throttle = 0
-        # Sequence the centaur engines
-        for i_engine,(e,b) in self.i_eb.items():
-            self.engines[i_engine].throttle=1 if self.t_cb[b,0]<=t<self.t_cb[b,1] else 0
-        self.stages[0].attached=(t<self.tsep_pm)
-
-
 # Take first reliable position as 60s after first Horizons data point.
 # This line is that data, copied from data/v1_horizons_vectors_1s.txt line 146
 horizons_data={1:[2443392.083615544,  # JDTDB
@@ -296,7 +164,7 @@ def parse_pm(pm_solution_str:str):
     """
     lines=[x.strip() for x in pm_solution_str.split("\n")]
     if match:=re.match(r"Voyager (?P<vgr_id>\d+) backpropagation through PM burn",lines[0]):
-        vgr_id=match.group("vgr_id")
+        vgr_id=int(match.group("vgr_id"))
     else:
         raise ValueError("Couldn't parse vgr_id")
     def parse_steer_param(steer_param:str,line:str):
@@ -401,6 +269,29 @@ def parse_pm(pm_solution_str:str):
     )
     print(result)
     return result
+
+
+def best_pm_initial_guess(*,vgr_id:int):
+    # Parameters are:
+    #   0 - dpitch, pitch angle between pure prograde and target in degrees
+    #   1 - dyaw, yaw angle between pure in-plane and target in degrees
+    #   2 - dthr, fractional difference in engine efficiency. 0 is 100%,
+    #       +0.1 is 110%, -0.1 is 90%, etc. This value changes thrust10 and ve
+    #       simultaneously so as to not affect mdot, so the propellant
+    #       will drain exactly as fast as before.
+    #   3 - yawrate - change in yaw vs time in deg/s.
+    pm_solution=parse_pm(pm_solutions_str[vgr_id])
+    if not vgr_id==pm_solution.vgr_id:
+        raise AssertionError("Solution does not match request")
+    return [pm_solution.dpitch,pm_solution.dyaw,pm_solution.dthr,pm_solution.yawrate]
+    #initial_guess=[float.fromhex("-0x1.72dc4a7dd46d7p+0"),
+    #               float.fromhex("-0x1.0c7d88ec0dcfdp-3"),
+    #               float.fromhex("-0x1.67f69c84a6779p-9"),
+    #               0.0] # Best known Voyager 1 three-parameter fit at 100Hz
+    initial_guess=[float.fromhex("-0x1.38f7f9ecab77ap+0"),
+                   float.fromhex("-0x1.1a5fdb187dc17p-1"),
+                   float.fromhex("-0x1.132db98957525p-8"),
+                   0.0] # Best known Voyager 2 three-parameter fit at 100Hz
 
 
 def init_spice():
