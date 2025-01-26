@@ -7,7 +7,7 @@ from typing import Callable
 
 import numpy as np
 from kwanmath.vector import vlength
-from scipy.interpolate import interp1d, RectBivariateSpline
+from scipy.interpolate import RectBivariateSpline
 
 from rocket_sim.planet import Planet
 from rocket_sim.vehicle import Vehicle
@@ -20,9 +20,9 @@ from rocket_sim.vehicle import Vehicle
 CaMach=np.array([
    0.00, 0.25, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.93, 0.95, 1.00, 1.05, 1.10, 1.15, 1.25, 1.40, 1.50, 1.75, 2.00, 2.50, 3.50, 4.50, 6.00, 8.00,10.00
 ])
-atlas_booster_Ca0=interp1d(CaMach,np.array([
+atlas_booster_Ca0=lambda M:np.interp(M,CaMach,np.array([
   0.373,0.347,0.345,0.350,0.365,0.391,0.425,0.481,0.565,0.610,0.725,0.760,0.773,0.770,0.740,0.665,0.622,0.530,0.459,0.374,0.303,0.273,0.259,0.267,0.289
-]),kind='linear')
+]))
 
 
 # Table 5-2. Components of total vehicle normal force coefficient
@@ -33,9 +33,9 @@ CnMach=np.array([
 # Cn0 is the normal force at zero angle of attack, due to vehicle asymmetry.
 # Other, smoother, vehicles might want to just use 0 for this.
 # Make the 1D table into a function f(mach)
-atlas_booster_Cn0=interp1d(CnMach,np.array([
+atlas_booster_Cn0=lambda M:np.interp(CnMach,np.array([
   0.0052,0.0052,0.0052,0.0100,0.0085,0.0079,0.0062,0.0057,0.0053,0.0051,0.0050,0.0050,0.0055,0.0072,0.0063,0.0059,0.0060,0.0062,0.0064,0.0060,0.0050,0.0036,0.0030
-]),kind='linear')
+]))
 
 
 #Alpha data points for angle-of-attack dependence
@@ -54,9 +54,9 @@ atlas_booster_CnStarOverAlpha=RectBivariateSpline(CnAlpha, CnMach, np.array([
   [0.1198,0.1198,0.1320,0.1658,0.1938,0.2241,0.2423,0.2595,0.2704,0.2714,0.2648,0.2551,0.2374,0.2312,0.2265,0.2229,0.2183,0.2131,0.2105,0.2095,0.2089,0.2077,0.2065]
 ]), kx=1,ky=1)
 
-atlas_sustainer_CnStarOverAlpha=interp1d(CnAlpha, np.array([
+atlas_sustainer_CnStarOverAlpha=lambda alpha:np.interp(alpha,CnAlpha, np.array([
   0.0743,0.0756,0.0810,0.0894,0.1049,0.2261,0.2065
-]), kind='linear')
+]))
 
 
 def atlas_Cn0(*,M:float,booster_attached:bool,sustainer_attached:bool)->float:
@@ -166,7 +166,7 @@ def f_drag(*,planet:Planet,clcd:Callable[...,tuple[float,float]],Sref:float)->Ca
         wind=planet.wind(y[:3]).reshape(-1)
         vrel=y[3:]-wind
         vrel_mag=vlength(vrel)
-        if vrel_mag==0:
+        if vrel_mag==0 or rho==0:
             # Early exit, plus avoid divide by zero when computing vrel direction on a zero vrel
             return np.zeros(3)
         M=vrel_mag/air_props.VSound
