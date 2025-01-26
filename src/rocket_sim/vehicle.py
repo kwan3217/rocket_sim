@@ -94,6 +94,17 @@ class Engine:
 
 
 class Vehicle:
+    @dataclass
+    class TlmPoint:
+        t: float
+        dt: float
+        y0: np.ndarray = None
+        y1: np.ndarray = None
+        mass: float = None
+        F_thr: np.ndarray = None
+        Fs: list[np.ndarray] = None
+        accs: list[np.ndarray] = None
+
     def __init__(self,*,
                  stages:list[Stage]|None=None,
                  engines:list[tuple[Engine,int]]|None=None,
@@ -184,7 +195,7 @@ class Vehicle:
                   logged once and only once -- the universe logs only on major steps.
         :param dt: time step size
         """
-        self.tlm_point=TlmPoint(t=t,dt=dt)
+        self.tlm_point=self.TlmPoint(t=t,dt=dt)
         self.tlm_points.append(self.tlm_point)
     def finish_tlm_point(self):
         pass
@@ -195,13 +206,3 @@ g0 = 9.80665  # Used to convert kgf to N
 N_per_lbf = kg_per_lbm * g0  # This many N in 1 lbf
 
 
-@dataclass
-class TlmPoint:
-    t:float
-    dt:float
-    y0:np.ndarray=None
-    y1:np.ndarray=None
-    mass:float=None
-    a_thr:np.ndarray=None
-    Fs:list[np.ndarray]=None
-    accs:list[np.ndarray]=None

@@ -6,7 +6,7 @@ Created: 1/23/25
 import pytest
 
 import numpy as np
-from kwanmath.vector import vangle
+from kwanmath.vector import vangle, vlength
 from matplotlib import pyplot as plt
 from spiceypy import pxform, kclear
 
@@ -26,6 +26,8 @@ def plot_tlm(vehicle:Vehicle,tc_id:int,earth:SpicePlanet,
              launch_alt:float, launch_et0:float,drag_enabled:bool):
     ts=np.array([tlm_point.t for tlm_point in vehicle.tlm_points])
     states=np.array([tlm_point.y0 for tlm_point in vehicle.tlm_points]).T
+    masses=np.array([tlm_point.mass for tlm_point in vehicle.tlm_points])
+    Fs=vlength(np.array([tlm_point.F_thr for tlm_point in vehicle.tlm_points]).T)
     alts=earth.b2lla(states[0:3,:]).alt
     # Position of the launchpad at each t, for calculating downrange
     y0b=earth.lla2b(lat_deg=launch_lat,lon_deg=launch_lon,alt=launch_alt)
@@ -39,16 +41,24 @@ def plot_tlm(vehicle:Vehicle,tc_id:int,earth:SpicePlanet,
     plt.figure("Vehicle telemetry")
     plt.subplot(2,2,1)
     plt.ylabel("Alt/km")
+    plt.xlabel("simt/s")
     plt.plot(ts,alts/1000,label=f'alt {"with drag" if drag_enabled else "no drag"}')
     plt.legend()
     plt.subplot(2,2,2)
     plt.ylabel("Downrange/km")
+    plt.xlabel("simt/s")
     plt.plot(ts,downranges/1000,label=f'alt {"with drag" if drag_enabled else "no drag"}')
     plt.legend()
     plt.subplot(2,2,3)
-    plt.ylabel("Alt/km vs Downrange/km")
+    plt.ylabel("Alt/km")
+    plt.xlabel("Downrange/km")
     plt.plot(downranges/1000,alts/1000,label=f'traj {"with drag" if drag_enabled else "no drag"}')
     plt.axis('equal')
+    plt.legend()
+    plt.subplot(2,2,4)
+    plt.ylabel("F/N")
+    plt.xlabel("simt/s")
+    plt.plot(ts,Fs,label=f'Thrust {"with drag" if drag_enabled else "no drag"}')
     plt.legend()
     plt.pause(0.1)
 
@@ -96,7 +106,7 @@ def test_titan3E_pitch_program_spheroid_drag(kernels,vgr_id:int,drag_enabled:boo
                    accs=[earth_twobody, earth_j2, moon, sun],
                    forces=[drag] if drag_enabled else [],
                    t0=0, y0s=[y0], fps=10)
-    sim.runto(t1=130.0)
+    sim.runto(t1=3800)
     plot_tlm(titan3E, tc_id=titan3E.tc_id,earth=earth,
              launch_lat=pad41_lat,launch_lon=pad41_lon,deg=True,
              launch_alt=pad41_alt,launch_et0=et0,drag_enabled=drag_enabled)
