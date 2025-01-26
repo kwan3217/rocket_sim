@@ -167,7 +167,7 @@ class Vehicle:
         else:
             result=np.array((0,0,1))
         return result
-    def generate_acc(self,*,t:float,dt:float,y:np.ndarray,major_step:bool):
+    def generate_thr(self,*,t:float,dt:float,y:np.ndarray,major_step:bool):
         if major_step:
             self.sequence(t=t,dt=dt,y=y)
         if self.extras is not None:
@@ -175,8 +175,7 @@ class Vehicle:
                 extra(t=t,dt=dt,y=y,major_step=major_step,vehicle=self)
         Fmag=self.thrust_mag(t=t,dt=dt,y=y,major_step=major_step)
         Fdir=self.thrust_dir(t=t,dt=dt,y=y,major_step=major_step)
-        m=self.mass()
-        return Fmag*Fdir/m
+        return Fmag*Fdir
 
     def start_tlm_point(self,*, t:float, dt:float):
         """
