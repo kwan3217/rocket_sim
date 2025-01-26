@@ -1,11 +1,16 @@
 """
 PEG on a clean sheet with functions instead of objects
 """
+from dataclasses import dataclass
+from typing import Callable
 
 import numpy as np
 from kwanmath.vector import vnormalize, vcross, vlength, vdot
 from matplotlib import pyplot as plt
 from numpy import log as ln
+
+from rocket_sim.planet import SpicePlanet
+from rocket_sim.vehicle import Vehicle
 
 
 def tau(*,a0:float,ve:float)->float:
@@ -302,6 +307,47 @@ def PEG_major_cycle(*,rv:np.array,vv:np.array,
         T=calcT(rv=rv,vv=vv,rT=rT,vqT=vqT,a0=a0,ve=ve,mu=mu,A=A,B=B,oldT=T)
 
 
-def peg_guide(*,planet:SpicePlanet,rT:float,rdotT:float,vqT:float):
-    def inner()
+
+@dataclass
+class PEGState:
+    A: float
+    B: float
+    T: float
+
+
+def peg_guide(*,planet:SpicePlanet,rT:float,rdotT:float,vqT:float,yaw0:float,A0:float,B0:float,T0:float)->Callable[...,np.ndarray]:
+    state=PEGState(A=A0,B=B0,T=T0)
+    def inner(*, t: float, y: np.ndarray, dt: float, major_step: bool, vehicle: Vehicle)->np.ndarray:
+            # Code that uses rT, rdotT, vqT, A, B, and T
+            vehicle_thrust=0
+            vehicle_mdot=0
+            for engine in vehicle.engines:
+                this_engine_thrust=engine.thrust10*engine.throttle
+                this_engine_mdot=this_engine_thrust/engine.ve0
+                vehicle_thrust+=this_engine_thrust
+                vehicle_mdot+=this_engine_mdot
+            vehicle_ve=vehicle_thrust/vehicle_mdot
+            vehicle_a0=vehicle_thrust/vehicle.mass()
+            rv=y[:3].reshape(-1,1)
+            vv=y[3:].reshape(-1,1)
+            state.A,state.B,state.T=PEG_major_cycle(rv=rv,vv=vv,
+                                                    A=state.A,B=state.B,T=state.T,
+                                                    ve=vehicle_ve,a0=vehicle_a0,
+                                                    rT=rT,rdotT=rdotT,vqT=vqT,
+                                                    mu=planet.mu,dt=dt)
+            # Code that calculates a guidance vector `result`.
+            # Resolve the downrange basis vectors, considering the current motion
+            # of the rocket which has considerable downrange motion already.
+            rhat, qhat, hhat = resolve_basis(rv=rv, vv=vv)
+            r = vlength(rv)
+            hv = vcross(rv, vv)
+            vq = vdot(vv, qhat)  # Downrange velocity
+            omega = vq / r  # angular velocity, rad/s. This is used to compute "centrifugal force"
+            fdotr=state.A+state.B*0+(planet.mu/r**2-omega**2*r)/vehicle_a0
+            fnotdotr=np.sqrt(1-fdotr**2)
+            fdotq=fnotdotr*np.cos(np.deg2rad(yaw0))
+            fdoth=fnotdotr*np.sin(np.deg2rad(yaw0))
+            result=fdotr*rhat+fdotq*qhat+fdoth*hhat
+            return result
+    return inner()
 
