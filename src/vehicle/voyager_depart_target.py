@@ -13,48 +13,66 @@ we will aim the burn in the prograde direction from the post-burn state.
 
 Created: 1/17/25
 """
+from typing import BinaryIO, TextIO
 
 import numpy as np
 from bmw import elorb
+from kwanmath.vector import vlength
 from kwanspice.mkspk import mkspk
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize
 from spiceypy import str2et, pxform, timout
 
-import voyager
+import vehicle.voyager
 
-from guidance.orbit import dprograde_guide
+from guidance.orbit import dprograde_guide, seq_guide, prograde_guide, yaw_rate_guide
 from rocket_sim.gravity import SpiceTwoBody, SpiceJ2, SpiceThirdBody
 from rocket_sim.universe import Universe
-from voyager import Voyager, horizons_data, \
+from rocket_sim.vehicle import Vehicle, g0
+from vehicle.titan_3e_centaur import Titan3E
+from vehicle.voyager import horizons_data, \
     simt_track_prePM, target_a_prePM, target_e_prePM, target_i_prePM, target_lan_prePM, \
     simt_track_park,  target_a_park,  target_e_park, target_i_park, target_c3_park, \
-    init_spice, horizons_et, voyager_et0
+    init_spice, horizons_et, voyager_et0, best_pm_solution,best_pm_initial_guess
 
 
-def sim_pm(*,dpitch:float=0.0, dthr:float=0.0, dyaw:float=0.0, yawrate:float=0.0, fps:int=100, verbose:bool=True,vgr_id:int=1):
+class Targeter:
+    def __call__(self,params)->float:
+        """
+        This is the interface to scipy.optimize.minimize. It takes a set
+        of parameters, calculates the cost, and returns it.
+        :return:
+        """
+        raise NotImplementedError
+
+
+class PMTargeter(Targeter):
+    pass
+
+
+def sim_pm(*,dpitch:float=0.0, dthr:float=0.0, dyaw:float=0.0, yawrate:float=0.0, fps:int=100, ouf:TextIO=None,vgr_id:int=1):
     horizons_t1 = horizons_et[vgr_id] - voyager_et0[vgr_id]
     y1 = np.array(horizons_data[vgr_id][3:9]) * 1000.0  # Convert km to m and km/s to m/s
-    sc = Voyager(vgr_id=vgr_id)
-    print(f"Voyager {vgr_id} backpropagation through PM burn")
-    print(f" dpitch: {dpitch:.13e} ({dpitch.hex()})")
-    print(f" dthr: {dthr:.13e} ({dthr.hex()})")
-    print(f" dyaw: {dyaw:.13e} ({dyaw.hex()})")
-    print(f" yawrate: {yawrate:.13e} ({yawrate.hex()})")
-    print(f" fps: {fps} ")
-    print(" Initial state (simt, ICRF, SI): ")
-    print(f"  simt=0 in ET: {voyager_et0[vgr_id]:.13e}  ({voyager_et0[vgr_id].hex()}) "
-          f"({timout(voyager_et0[vgr_id],'YYYY-MM-DDTHR:MN:SC.### ::TDB')} TDB,{timout(voyager_et0[vgr_id],'YYYY-MM-DDTHR:MN:SC.### ::UTC')}Z)")
-    print(f"  simt:  {horizons_t1: .13e}  rx:   {y1[0]: .13e}  ry:   {y1[1]: .13e}  rz:   {y1[2]: .13e}")
-    print(f"        {horizons_t1.hex()}       {  y1[0].hex()}      {  y1[1].hex()}      {  y1[2].hex()}")
-    print(f"                               vx:   {y1[3]: .13e}  vy:   {y1[4]: .13e}  vz:   {y1[5]: .13e}")
-    print(f"                                    {  y1[3].hex()}       {  y1[4].hex()}       {  y1[5].hex()}")
-    sc.guide = seq_guide({sc.tsep_pm: prograde_guide,
+    sc = Titan3E(tc_id=5+vgr_id)
+    initstate=(f"""Voyager {vgr_id} backpropagation through PM burn
+ dpitch: {dpitch:.13e} ({dpitch.hex()})
+ dthr: {dthr:.13e} ({dthr.hex()})
+ dyaw: {dyaw:.13e} ({dyaw.hex()})
+ yawrate: {yawrate:.13e} ({yawrate.hex()})
+ fps: {fps} 
+ Initial state (simt, ICRF, SI): 
+  simt=0 in ET: {voyager_et0[vgr_id]:.13e}  ({voyager_et0[vgr_id].hex()}) ({timout(voyager_et0[vgr_id],'YYYY-MM-DDTHR:MN:SC.### ::TDB')} TDB,{timout(voyager_et0[vgr_id],'YYYY-MM-DDTHR:MN:SC.### ::UTC')}Z)
+  simt:  {horizons_t1: .13e}  rx:   {y1[0]: .13e}  ry:   {y1[1]: .13e}  rz:   {y1[2]: .13e}
+        {horizons_t1.hex()}       {  y1[0].hex()}      {  y1[1].hex()}      {  y1[2].hex()}
+                               vx:   {y1[3]: .13e}  vy:   {y1[4]: .13e}  vz:   {y1[5]: .13e}
+                                    {  y1[3].hex()}       {  y1[4].hex()}       {  y1[5].hex()}""")
+    print(initstate)
+    sc.guide = seq_guide({sc.tdrop[sc.i_centaur]: prograde_guide,
                           float('inf'): yaw_rate_guide(r0=y1[:3], v0=y1[3:],
                                                        dpitch=dpitch, dyaw=dyaw, yawrate=yawrate,
-                                                       t0=sc.t_pm0)})
+                                                       t0=sc.tburn[sc.i_pmengine][0])})
     # Tweak engine efficiency
-    sc.engines[sc.i_epm].eff= 1.0 + dthr
+    sc.engines[sc.i_pmengine].eff= 1.0 + dthr
     earth_twobody = SpiceTwoBody(spiceid=399)
     earth_j2 = SpiceJ2(spiceid=399)
     moon = SpiceThirdBody(spice_id_center=399, spice_id_body=301, et0=voyager_et0[vgr_id])
@@ -64,37 +82,50 @@ def sim_pm(*,dpitch:float=0.0, dthr:float=0.0, dyaw:float=0.0, yawrate:float=0.0
     sc.stages[sc.i_centaur].prop_mass=0
     sc.stages[sc.i_pm].prop_mass=0
     sim.runto(t1=simt_track_prePM[vgr_id])
-    print("Final state (simt, ICRF, SI): ")
-    print(f"  simt:  {sc.tlm_points[-1].t: .13e}  rx:   {sc.tlm_points[-1].y0[0]: .13e}  ry:   {sc.tlm_points[-1].y0[1]: .13e}  rz:   {sc.tlm_points[-1].y0[2]: .13e}")
-    print(f"        {sc.tlm_points[-1].t.hex()}       {  sc.tlm_points[-1].y0[0].hex()}      {  sc.tlm_points[-1].y0[1].hex()}      {  sc.tlm_points[-1].y0[2].hex()}")
-    print(f"                               vx:   {sc.tlm_points[-1].y0[3]: .13e}  vy:   {sc.tlm_points[-1].y0[4]: .13e}  vz:   {sc.tlm_points[-1].y0[5]: .13e}")
-    print(f"                                    {  sc.tlm_points[-1].y0[3].hex()}       {  sc.tlm_points[-1].y0[4].hex()}       {  sc.tlm_points[-1].y0[5].hex()}")
-    if verbose:
-        ts = np.array([x.t for x in sc.tlm])
-        states = np.array([x.y for x in sc.tlm])
-        masses = np.array([x.mass for x in sc.tlm])
-        thrusts = np.array([x.thrust for x in sc.tlm])
-        accs = thrusts / masses
-        elorbs = [elorb(x.y[:3], x.y[3:], l_DU=voyager.EarthRe, mu=voyager.EarthGM, t0=x.t) for x in sc.tlm]
-        eccs = np.array([elorb.e for elorb in elorbs])
-        incs = np.array([np.rad2deg(elorb.i) for elorb in elorbs])
-        smis = np.array([elorb.a for elorb in elorbs]) / 1852  # Display in nmi to match document
-        c3s = -(voyager.EarthGM / (1000 ** 3)) / (np.array([elorb.a for elorb in elorbs]) / 1000)  # work directly in km
-        plt.figure("spd")
-        plt.plot(ts, np.linalg.norm(states[:, 3:6], axis=1), label='spd')
-        plt.figure("ecc")
-        plt.plot(ts, eccs, label='e')
-        plt.figure("inc")
-        plt.plot(ts, incs, label='i')
-        plt.figure("a")
-        plt.plot(ts, smis, label='a')
-        plt.ylabel('semi-major axis/nmi')
-        plt.figure("c3")
-        plt.plot(ts, c3s, label='c3')
-        plt.ylabel('$C_3$/(km**2/s**2)')
-        plt.figure("mass")
-        plt.plot(ts, masses, label='i')
-        plt.show()
+    finalstate=f"""Final state (simt, ICRF, SI): 
+  simt:  {sc.tlm_points[-1].t: .13e}  rx:   {sc.tlm_points[-1].y0[0]: .13e}  ry:   {sc.tlm_points[-1].y0[1]: .13e}  rz:   {sc.tlm_points[-1].y0[2]: .13e}
+        {sc.tlm_points[-1].t.hex()}       {  sc.tlm_points[-1].y0[0].hex()}      {  sc.tlm_points[-1].y0[1].hex()}      {  sc.tlm_points[-1].y0[2].hex()}
+                               vx:   {sc.tlm_points[-1].y0[3]: .13e}  vy:   {sc.tlm_points[-1].y0[4]: .13e}  vz:   {sc.tlm_points[-1].y0[5]: .13e}
+                                    {  sc.tlm_points[-1].y0[3].hex()}       {  sc.tlm_points[-1].y0[4].hex()}       {  sc.tlm_points[-1].y0[5].hex()}"""
+    print(finalstate)
+    if ouf is not None:
+        print(initstate,file=ouf)
+        print(finalstate,file=ouf)
+    ts = np.array([x.t for x in sc.tlm_points])
+    states = np.array([x.y0 for x in sc.tlm_points])
+    masses = np.array([x.mass for x in sc.tlm_points])
+    #thrusts = np.array([vlength(x.F_thr) for x in sc.tlm_points])
+    #accs = thrusts / masses
+    elorbs = [elorb(x.y0[:3], x.y0[3:], l_DU=vehicle.voyager.EarthRe, mu=vehicle.voyager.EarthGM, t0=x.t) for x in sc.tlm_points]
+    eccs = np.array([elorb.e for elorb in elorbs])
+    incs = np.array([np.rad2deg(elorb.i) for elorb in elorbs])
+    c3s = -(vehicle.voyager.EarthGM / (1000 ** 3)) / (np.array([elorb.a for elorb in elorbs]) / 1000)  # work directly in km
+    plt.figure(f"Voyager {vgr_id} PM burn")
+    plt.subplot(231)
+    plt.cla()
+    plt.ylabel('spd/(m/s)')
+    plt.xlabel('simt/s')
+    plt.plot(ts, np.linalg.norm(states[:, 3:6], axis=1), label='spd')
+    plt.subplot(232)
+    plt.cla()
+    plt.ylabel('ecc')
+    plt.xlabel('simt/s')
+    plt.plot(ts, eccs, label='e')
+    plt.subplot(233)
+    plt.cla()
+    plt.ylabel('inc/deg')
+    plt.xlabel('simt/s')
+    plt.plot(ts, incs, label='i')
+    plt.subplot(234)
+    plt.cla()
+    plt.ylabel('a/nmi')
+    plt.xlabel('simt/s')
+    plt.plot(ts, [elorb.a/1852 for elorb in elorbs], label='a')
+    plt.subplot(235)
+    plt.cla()
+    plt.ylabel('mass/kg')
+    plt.xlabel('simt/s')
+    plt.plot(ts, masses, label='i')
     return sc
 
 
@@ -113,7 +144,7 @@ def sim_centaur2(*,simt1:float,y1:np.ndarray,dpitch:float, dthr:float, dyaw:floa
     :param vgr_id: Which voyager are we working on?
     :return:
     """
-    sc = Voyager(vgr_id=vgr_id)
+    sc = Titan3E(tc_id=5+vgr_id)
     print(f"Voyager {vgr_id} backpropagation through Centaur burn 2")
     print(f" dpitch: {dpitch:.13e} ({dpitch.hex()})")
     print(f" dthr: {dthr:.13e} ({dthr.hex()})")
@@ -128,11 +159,9 @@ def sim_centaur2(*,simt1:float,y1:np.ndarray,dpitch:float, dthr:float, dyaw:floa
     print(f"        {simt1.hex()}       {  y1[0].hex()}      {  y1[1].hex()}      {  y1[2].hex()}")
     print(f"                               vx:   {y1[3]: .13e}  vy:   {y1[4]: .13e}  vz:   {y1[5]: .13e}")
     print(f"                                    {  y1[3].hex()}       {  y1[4].hex()}       {  y1[5].hex()}")
-    sc.guide = dprograde_guide(dpitch=dpitch, dyaw=dyaw, pitchrate=pitchrate,t0=sc.t_cb[(2,0)])
+    sc.guide = dprograde_guide(dpitch=dpitch, dyaw=dyaw, pitchrate=pitchrate,t0=sc.tburn[sc.i_cengine2][0])
     # Tweak engine efficiency
-    for i,(e,b) in sc.i_eb.items():
-        if b==2:
-            sc.engines[i].eff= 1.0 + dthr
+    sc.engines[sc.i_cengine2].eff=1.0+dthr
     earth_twobody = SpiceTwoBody(spiceid=399)
     earth_j2 = SpiceJ2(spiceid=399)
     moon = SpiceThirdBody(spice_id_center=399, spice_id_body=301, et0=voyager_et0[vgr_id])
@@ -140,7 +169,7 @@ def sim_centaur2(*,simt1:float,y1:np.ndarray,dpitch:float, dthr:float, dyaw:floa
     sim = Universe(vehicles=[sc], accs=[earth_twobody, earth_j2, moon, sun], t0=simt1, y0s=[y1], fps=fps1)
     # Propellant tank "starts" out empty and fills up as time runs backwards (but not mission module)
     sc.stages[sc.i_centaur].prop_mass=0
-    sim.runto(t1=sc.t_cb[(2,0)]-10)
+    sim.runto(t1=sc.tburn[sc.i_cengine2][0]-10)
     print("State just prior to Centaur burn 2 (simt, ICRF, SI): ")
     print(f"  simt:  {sc.tlm_points[-1].t: .13e}  rx:   {sc.tlm_points[-1].y0[0]: .13e}  ry:   {sc.tlm_points[-1].y0[1]: .13e}  rz:   {sc.tlm_points[-1].y0[2]: .13e}")
     print(f"        {sc.tlm_points[-1].t.hex()}       {  sc.tlm_points[-1].y0[0].hex()}      {  sc.tlm_points[-1].y0[1].hex()}      {  sc.tlm_points[-1].y0[2].hex()}")
@@ -153,59 +182,36 @@ def sim_centaur2(*,simt1:float,y1:np.ndarray,dpitch:float, dthr:float, dyaw:floa
     print(f"        {sc.tlm_points[-1].t.hex()}       {  sc.tlm_points[-1].y0[0].hex()}      {  sc.tlm_points[-1].y0[1].hex()}      {  sc.tlm_points[-1].y0[2].hex()}")
     print(f"                               vx:   {sc.tlm_points[-1].y0[3]: .13e}  vy:   {sc.tlm_points[-1].y0[4]: .13e}  vz:   {sc.tlm_points[-1].y0[5]: .13e}")
     print(f"                                    {  sc.tlm_points[-1].y0[3].hex()}       {  sc.tlm_points[-1].y0[4].hex()}       {  sc.tlm_points[-1].y0[5].hex()}")
-    if verbose:
-        ts = np.array([x.t for x in sc.tlm_points])
-        states = np.array([x.y0 for x in sc.tlm_points])
-        masses = np.array([x.mass for x in sc.tlm_points])
-        accs = np.array([x.a_thr for x in sc.tlm_points])
-        elorbs = [elorb(x.y0[:3], x.y0[3:], l_DU=voyager.EarthRe, mu=voyager.EarthGM, t0=x.t) for x in sc.tlm_points]
-        eccs = np.array([elorb.e for elorb in elorbs])
-        incs = np.array([np.rad2deg(elorb.i) for elorb in elorbs])
-        smis = np.array([elorb.a for elorb in elorbs]) / 1852  # Display in nmi to match document
-        c3s = -(voyager.EarthGM / (1000 ** 3)) / (np.array([elorb.a for elorb in elorbs]) / 1000)  # work directly in km
-        plt.figure(1)
-        plt.clf()
-        plt.subplot(2,3,1)
-        plt.plot(ts, np.linalg.norm(states[:, 3:6], axis=1), label='spd')
-        plt.title("spd")
-        plt.subplot(2,3,2)
-        plt.plot(ts, eccs, label='e')
-        plt.title("e")
-        plt.subplot(2,3,3)
-        plt.plot(ts, incs, label='i')
-        plt.title("inc")
-        plt.subplot(2,3,4)
-        plt.plot(ts, smis, label='a')
-        plt.title("a")
-        plt.ylim(-5000,5000)
-        plt.ylabel('semi-major axis/nmi')
-        plt.subplot(2,3,5)
-        plt.plot(ts, c3s, label='c3')
-        plt.title("c3")
-        plt.ylabel('$C_3$/(km**2/s**2)')
-        plt.subplot(2,3,6)
-        plt.plot(ts, masses, label='i')
-        plt.title("mass")
-        plt.pause(0.1)
+    ts = np.array([x.t for x in sc.tlm_points])
+    states = np.array([x.y0 for x in sc.tlm_points]).T
+    masses = np.array([x.mass for x in sc.tlm_points])
+    accs = np.array([x.F_thr for x in sc.tlm_points]).T/masses
+    elorbs = [elorb(x.y0[:3], x.y0[3:], l_DU=vehicle.voyager.EarthRe, mu=vehicle.voyager.EarthGM, t0=x.t) for x in sc.tlm_points]
+    eccs = np.array([elorb.e for elorb in elorbs])
+    incs = np.array([np.rad2deg(elorb.i) for elorb in elorbs])
+    c3s = -(vehicle.voyager.EarthGM / (1000 ** 3)) / (np.array([elorb.a for elorb in elorbs]) / 1000)  # work directly in km
+    plt.figure(1)
+    plt.clf()
+    plt.subplot(2,3,1)
+    plt.plot(ts, vlength(states[3:6, :]), label='spd')
+    plt.ylabel("spd/(m/s)")
+    plt.subplot(2,3,2)
+    plt.plot(ts, eccs, label='e')
+    plt.ylabel("e")
+    plt.subplot(2,3,3)
+    plt.plot(ts, incs, label='i')
+    plt.ylabel("inc/deg")
+    plt.subplot(2,3,4)
+    plt.plot(ts, c3s, label='c3')
+    plt.ylabel('$C_3$/(km**2/s**2)')
+    plt.subplot(2,3,5)
+    plt.plot(ts, vlength(accs)/g0, label='accs')
+    plt.ylabel("acc/g")
+    plt.pause(0.1)
     return sc
 
 
-def opt_interface_pm_burn(target:np.ndarray=None,verbose:bool=False, fps:int=100, vgr_id:int=1)->float:
-    """
-    Calculate the "cost" of a set of targeting parameters by
-    walking back through the PM maneuver from a known state.
-    Cost is related to difference of a, e, i from documented
-    pre-PM state.
-    :param target: Array containing difference in degrees between latitude
-                   (index 0) and longitude (index 1) of target inertial
-                   position away from prograde at Horizons data point.
-                   (0,0) is a valid initial guess that results in prograde
-                   at Horizons.
-    :return: squared length of vector whose length is weighted error in a, e, and i.
-             This is zero if the target is hit, and greater than zero for any miss.
-    """
-    dpitch, dyaw, dthr,yawrate = target
-    sc = sim_pm(dpitch=dpitch, dthr=dthr, dyaw=dyaw, fps=fps, verbose=verbose, yawrate=yawrate, vgr_id=vgr_id)
+def pm_cost(*,dpitch:float, dthr:float, dyaw:float, sc:Vehicle, vgr_id,ouf:TextIO|None):
     # Initial Pre-PM orbit does not have complete orbit elements. It is reasonable
     # to believe that tracking was done in a frame aligned to the equator of date,
     # not J2000. We can't transform an incomplete orbit element set to J2000, so
@@ -228,21 +234,62 @@ def opt_interface_pm_burn(target:np.ndarray=None,verbose:bool=False, fps:int=100
     # In this frame, the reported ascending node is Longitude of ascending node, not
     # right ascension. It is relative to the Earth-fixed coordinates at this instant,
     # not the sky coordinates.
-    elorb0 = elorb(r0_e, v0_e, l_DU=voyager.EarthRe, mu=voyager.EarthGM, t0=simt_track_prePM[vgr_id], deg=True)
-    da = (target_a_prePM[vgr_id] - elorb0.a) / voyager.EarthRe  # Use Earth radius to weight da
-    de = (target_e_prePM[vgr_id] - elorb0.e)
-    di = np.deg2rad(target_i_prePM[vgr_id] - elorb0.i)
-    dlan = np.deg2rad(target_lan_prePM[vgr_id] - elorb0.an)
-    cost = (da ** 2 + de ** 2 + di ** 2 + 0 * dlan ** 2) * 1e6
-    print(f"{dyaw=} deg, {yawrate=} deg/s, {dpitch=} deg, {dthr=}")
-    print(f"   {da=} Earth radii")
-    print(f"      ({da * voyager.EarthRe} m)")
-    print(f"   {de=}")
-    print(f"   {di=} rad")
-    print(f"      ({np.rad2deg(di)} deg)")
-    print(f"   {dlan=} rad")
-    print(f"      ({np.rad2deg(dlan)} deg)")
-    print(f"Cost: {cost}")
+    elorb0 = elorb(r0_e, v0_e, l_DU=vehicle.voyager.EarthRe, mu=vehicle.voyager.EarthGM, t0=simt_track_prePM[vgr_id],
+                   deg=True)
+    da = (target_a_prePM[vgr_id] - elorb0.a) / 1852  # da in nmi
+    de = (target_e_prePM[vgr_id] - elorb0.e)  # de
+    di = (target_i_prePM[vgr_id] - elorb0.i)  # di in deg
+    dlan = (target_lan_prePM[vgr_id] - elorb0.an)  # dlan in deg -- not used for targeting
+    sa = 2e-1  # difference between Antigua and Guidance measurement
+    se = 0.00007  # likewise
+    si = 0.01  # likewise
+    # So the cost is the sum of squares of each difference
+    # expressed as multiples of the uncertainty
+    cost = ((da / sa) ** 2 + (de / se) ** 2 + (di / si) ** 2)
+    plt.subplot(2, 3, 2)
+    trange = [sc.tlm_points[0].t, sc.tlm_points[-1].t + sc.tlm_points[-1].dt]
+    plt.plot(trange, target_e_prePM[vgr_id] * np.array([1, 1]), 'k--')
+    plt.subplot(2, 3, 3)
+    plt.plot(trange, target_i_prePM[vgr_id] * np.array([1, 1]), 'k--', label='target J1977')
+    plt.plot(trange, elorb0.i * np.array([1, 1]), 'r--', label='achieved J1977')
+    plt.legend()
+    plt.subplot(2, 3, 4)
+    plt.plot(trange, target_a_prePM[vgr_id] / 1852 * np.array([1, 1]), 'k--')
+    plt.subplot(2, 3, 6)
+    plt.cla()
+    coststr = f"""
+{dyaw=:.6f} deg, {dpitch=:.6f} deg, {dthr=:.6f}
+   ahist={target_a_prePM[vgr_id] / 1852:.2f} nmi, acalc={elorb0.a / 1852:.2f} nmi, {da=:.2f} nmi, {da / sa:8.1f} sigma
+   ehist={target_e_prePM[vgr_id]:.6f},    ecalc={elorb0.e:.6f},    {de=:.6f},  {de / se:8.1f} sigma
+   ihist={target_i_prePM[vgr_id]:.4f} deg, icalc={elorb0.i:.4f} deg, {di=:.4f} deg, {di / si:8.1f} sigma
+   lanhist={target_lan_prePM[vgr_id]:.4f} deg, lancalc={elorb0.an:.4f} deg, {dlan=:.4f} deg
+Cost: {cost}"""
+    print(coststr)
+    if ouf is not None:
+        print(coststr,file=ouf)
+    plt.text(0, 0.5, coststr, horizontalalignment='left', verticalalignment='center', transform=plt.gca().transAxes)
+    plt.axis('off')
+    plt.pause(0.1)
+    return cost
+
+
+def opt_interface_pm_burn(*,target:np.ndarray=None, fps:int=100, vgr_id:int=1,ouf:TextIO|None)->float:
+    """
+    Calculate the "cost" of a set of targeting parameters by
+    walking back through the PM maneuver from a known state.
+    Cost is related to difference of a, e, i from documented
+    pre-PM state.
+    :param target: Array containing difference in degrees between latitude
+                   (index 0) and longitude (index 1) of target inertial
+                   position away from prograde at Horizons data point.
+                   (0,0) is a valid initial guess that results in prograde
+                   at Horizons.
+    :return: squared length of vector whose length is weighted error in a, e, and i.
+             This is zero if the target is hit, and greater than zero for any miss.
+    """
+    dpitch, dyaw, dthr,yawrate = target
+    sc = sim_pm(dpitch=dpitch, dthr=dthr, dyaw=dyaw, fps=fps, yawrate=yawrate, vgr_id=vgr_id)
+    cost = pm_cost(dpitch=dpitch, dthr=dthr, dyaw=dyaw, sc=sc, vgr_id=vgr_id,ouf=ouf)
     return cost
 
 
@@ -268,7 +315,7 @@ def opt_interface_centaur2(target:np.ndarray=None,*,simt1:float,y1:np.ndarray,ve
     # In this frame, the reported ascending node is Longitude of ascending node, not
     # right ascension. It is relative to the Earth-fixed coordinates at this instant,
     # not the sky coordinates.
-    elorb0 = elorb(r0_e, v0_e, l_DU=voyager.EarthRe, mu=voyager.EarthGM, t0=simt_track_prePM[vgr_id], deg=True)
+    elorb0 = elorb(r0_e, v0_e, l_DU=vehicle.voyager.EarthRe, mu=vehicle.voyager.EarthGM, t0=simt_track_prePM[vgr_id], deg=True)
     # Put each error into the units of the historical report
     da = (target_a_park[vgr_id] - elorb0.a) / 1852  # Use nautical miles to match significant figures
     de = (target_e_park[vgr_id] - elorb0.e)
@@ -303,31 +350,15 @@ def target_pm(export:bool=False, optimize:bool=False, vgr_id:int=1):
     #       simultaneously so as to not affect mdot, so the propellant
     #       will drain exactly as fast as before.
     #   3 - yawrate - change in yaw vs time in deg/s.
-    #initial_guess=np.zeros(4)
-    #initial_guess = [-1.4501264557665727,
-    #                  0.0076685577917476625,
-    #                 -0.001724033782731768,
-    #                 0]  # Best known three-parameter fit for four targets
-    #initial_guess=[-1.4501304910881003,
-    #               -0.13110923799828175,
-    #               -0.0017211606889325382,
-    #                0.0] # Best known three-parameter fit for three targets
-    #initial_guess=[float.fromhex("-0x1.72dc4a7dd46d7p+0"),
-    #               float.fromhex("-0x1.0c7d88ec0dcfdp-3"),
-    #               float.fromhex("-0x1.67f69c84a6779p-9"),
-    #               0.0] # Best known Voyager 1 three-parameter fit at 100Hz
-    initial_guess=[float.fromhex("-0x1.38f7f9ecab77ap+0"),
-                   float.fromhex("-0x1.1a5fdb187dc17p-1"),
-                   float.fromhex("-0x1.132db98957525p-8"),
-                   0.0] # Best known Voyager 2 three-parameter fit at 100Hz
+    initial_guess= best_pm_initial_guess(vgr_id=vgr_id)
     bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(0,0)]  # Freeze yaw rate at 0
     #initial_guess = [-1.438, 13.801, +0.00599, -0.549]  # From previous four-parameter form
     #bounds = [(-30, 30), (-30, 30), (-0.1, 0.1),(-1,1)]  # Bounds on
     if optimize:
-        result = minimize(lambda x:opt_interface_pm_burn(x,vgr_id=vgr_id),
+        result = minimize(lambda x:opt_interface_pm_burn(target=x,vgr_id=vgr_id,ouf=None),
                           initial_guess,
                           method='L-BFGS-B',
-                          options={'ftol':1e-12,'gtol':1e-12,'disp':True},
+                          options={'ftol':1e-4,'disp':True},
                           bounds=bounds)
         print("Achieved cost:", result.fun)
         print(result)
@@ -336,9 +367,17 @@ def target_pm(export:bool=False, optimize:bool=False, vgr_id:int=1):
         final_guess=initial_guess
     print("Optimal parameters:", final_guess)
     print("Optimal run: ")
-    sc=sim_pm(**{k:v for k,v in zip(('dpitch','dyaw','dthr','yawrate'),final_guess)},verbose=True,vgr_id=vgr_id)
+    dpitch,dyaw,dthr,yawrate=final_guess
+    with open(f'products/vgr{vgr_id}_pm_optimal_run.txt',"wt") as ouf:
+        sc=sim_pm(dpitch=dpitch,dyaw=dyaw,dthr=dthr,yawrate=yawrate,vgr_id=vgr_id,ouf=ouf)
+        pm_cost(dpitch=dpitch,dthr=dthr,dyaw=dyaw,sc=sc,vgr_id=vgr_id,ouf=ouf)
+        try:
+            print("Optimizer results:",result,file=ouf)
+        except Exception:
+            # No optimizer result
+            pass
     if export:
-        states=sorted([np.hstack((np.array(x.t),x.y)) for x in sc.tlm], key=lambda x:x[0])
+        states=sorted([np.hstack((np.array(x.t),x.y0)) for x in sc.tlm_points], key=lambda x:x[0])
         decimated_states=[]
         i=0
         di=1
@@ -347,7 +386,7 @@ def target_pm(export:bool=False, optimize:bool=False, vgr_id:int=1):
             states[i][0]+=voyager_et0[vgr_id]
             decimated_states.append(states[i])
             try:
-                if sc.t_pm0<states[i+di][0]<sc.t_pm1:
+                if sc.tburn[sc.i_pmengine][0]<states[i+di][0]<sc.tburn[sc.i_pmengine][0]:
                     di=1
                 else:
                     di=100
@@ -512,12 +551,12 @@ def export(vgr_id:int):
 
 def main():
     init_spice()
-    vgr_id=2
-    #pm=target_pm(export=True, optimize=True,vgr_id=vgr_id)
-    pm=voyager.parse_pm(voyager.pm_solutions_str[vgr_id])
+    vgr_id=1
+    #target_pm(export=False, optimize=True,vgr_id=vgr_id)
+    pm=best_pm_solution(vgr_id=vgr_id)
     target_centaur2(simt1=pm.simt0,y1=pm.y0,fps1=10, optimize=True, export=True,vgr_id=vgr_id)
-    for vgr_id in (1,2):
-        export(vgr_id)
+    #for vgr_id in (1,2):
+    #    export(vgr_id)
 
 
 if __name__=="__main__":

@@ -109,9 +109,9 @@ class Universe:
                           values are allowed.
         """
         def F(*,t:float,y:np.ndarray,dt:float,major_step:bool,vehicle:Vehicle):
-            a_thr=vehicle.generate_acc(t=t,dt=dt,y=y,major_step=major_step)
-            a=a_thr.copy()
+            F_thr=vehicle.generate_thr(t=t,dt=dt,y=y,major_step=major_step)
             m = vehicle.mass()
+            a=F_thr/m
             Fs=[]
             accs=[]
             for force in self.forces:
@@ -124,7 +124,7 @@ class Universe:
                 accs.append(this_a)
                 a+=this_a
             if major_step:
-                vehicle.tlm_point.a_thr=a_thr
+                vehicle.tlm_point.F_thr=F_thr
                 vehicle.tlm_point.Fs=Fs
                 vehicle.tlm_point.accs=accs
                 vehicle.tlm_point.mass=m

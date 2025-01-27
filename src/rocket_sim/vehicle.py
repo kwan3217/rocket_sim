@@ -94,6 +94,17 @@ class Engine:
 
 
 class Vehicle:
+    @dataclass
+    class TlmPoint:
+        t: float
+        dt: float
+        y0: np.ndarray = None
+        y1: np.ndarray = None
+        mass: float = None
+        F_thr: np.ndarray = None
+        Fs: list[np.ndarray] = None
+        accs: list[np.ndarray] = None
+
     def __init__(self,*,
                  stages:list[Stage]|None=None,
                  engines:list[tuple[Engine,int]]|None=None,
@@ -167,7 +178,7 @@ class Vehicle:
         else:
             result=np.array((0,0,1))
         return result
-    def generate_acc(self,*,t:float,dt:float,y:np.ndarray,major_step:bool):
+    def generate_thr(self,*,t:float,dt:float,y:np.ndarray,major_step:bool):
         if major_step:
             self.sequence(t=t,dt=dt,y=y)
         if self.extras is not None:
@@ -175,8 +186,7 @@ class Vehicle:
                 extra(t=t,dt=dt,y=y,major_step=major_step,vehicle=self)
         Fmag=self.thrust_mag(t=t,dt=dt,y=y,major_step=major_step)
         Fdir=self.thrust_dir(t=t,dt=dt,y=y,major_step=major_step)
-        m=self.mass()
-        return Fmag*Fdir/m
+        return Fmag*Fdir
 
     def start_tlm_point(self,*, t:float, dt:float):
         """
@@ -185,7 +195,7 @@ class Vehicle:
                   logged once and only once -- the universe logs only on major steps.
         :param dt: time step size
         """
-        self.tlm_point=TlmPoint(t=t,dt=dt)
+        self.tlm_point=self.TlmPoint(t=t,dt=dt)
         self.tlm_points.append(self.tlm_point)
     def finish_tlm_point(self):
         pass
@@ -196,13 +206,3 @@ g0 = 9.80665  # Used to convert kgf to N
 N_per_lbf = kg_per_lbm * g0  # This many N in 1 lbf
 
 
-@dataclass
-class TlmPoint:
-    t:float
-    dt:float
-    y0:np.ndarray=None
-    y1:np.ndarray=None
-    mass:float=None
-    a_thr:np.ndarray=None
-    Fs:list[np.ndarray]=None
-    accs:list[np.ndarray]=None

@@ -1,300 +1,353 @@
 """
-Foo all the Bars
+PEG on a clean sheet with functions instead of objects
 """
+from dataclasses import dataclass
+from typing import Callable
+
 import numpy as np
-import math
+from kwanmath.vector import vnormalize, vcross, vlength, vdot
+from matplotlib import pyplot as plt
 from numpy import log as ln
-from kwanmath.ode import rk4
-from kwanmath.vector import vlength,vdot,rv as get_rv, vv as get_vv, vcomp
 
-def ag(sv,mu):
-    rv=get_rv(sv)
+from rocket_sim.planet import SpicePlanet
+from rocket_sim.vehicle import Vehicle
+
+
+def tau(*,a0:float,ve:float)->float:
+    """
+    Normalized mass of rocket. This is the current mass divided by the current flow rate.
+    We calculate it from the current acceleration and effective exhaust velocity like this:
+    F=m*a
+    ve=F/mdot
+    tau=m/mdot
+    m=F/a
+    mdot=F/ve
+    tau=(F/a)/(F/ve)
+       =(F/a)(ve/F)
+       =ve/a
+    :param a: Acceleration of rocket in L/T**2 (SI: m/s^2)
+    :param ve: Effective exhaust velocity in L/T (SI: m/s)
+    :return: Normalized mass in T (SI: s)
+    """
+    return ve/a0
+
+def a(*,a0:float,ve:float,t:float)->float:
+    return a0/(1-t/tau(a0=a0,ve=ve))
+
+
+def resolve_basis(*,rv:np.array,vv:np.array)->tuple[np.array,np.array,np.array]:
+    rhat=vnormalize(rv) #vertical basis vector
+    hhat=vnormalize(vcross(rv,vv)) #crossrange basis vector, generally pointing "left" if qhat is considered "forward".
+    qhat=vnormalize(vcross(hhat,rhat)) #downrange basis vector, q for \hat{theta}
+    return rhat,qhat,hhat
+
+def steer(*,rv:np.array,vv:np.array,mu:float,t:float,
+            a0:float,ve:float,
+            A:float,B:float,K:float=0.0,
+            )->np.array:
+    """
+    Calculate the thrust direction
+    :param rv: Position vector
+    :param vv: Velocity vector
+    :param mu: Gravitational constant
+    :param a0: acceleration of vehicle at epoch
+    :param tau: normalized mass at epoch. This is the mass flow rate
+                divided by the mass at the epoch, and therefore has
+    :param A: Pitch steering constant A
+    :param B: Pitch steering constant B
+    :param K: Yaw steering constant K, default does no yaw steering
+    :param t: Time since steering constant epoch
+    :return: Requested thurst vector
+    """
+    # The steering program is used to generate as follows:
+    # \ddot{r}=a(t)(A+Bt)
+    # The control program needs a direction to point, so
+    # we also have to figure that out. A steering program
+    # which hits the desired vertical acceleration above is:
+    # \hat{f}\cdot\hat{r}=A+Bt+\frac{\mu}{a(t)r(t)^2}-\frac{\omega(t)^2r(t)^2}{a(t)}
+    # Remembering that this acceleration takes place in a
+    # rotating frame with gravity, we have
+    # \ddot{r}(t)=-\frac{\mu}{r(t)^2}+\omega(t)^2r(t)+a(t)\left(\hat{f}\cdot\hat{r}\right)
+    #            =-\frac{\mu}{r(t)^2}+\omega(t)^2r(t)+a(t)\left(A+Bt+\frac{\mu}{a(t)r(t)^2}-\frac{\omega(t)^2r(t)^2}{a(t)}\right)
+    #            =-\frac{\mu}{r(t)^2}+\omega(t)^2r(t)+a(t)A+a(t)Bt+a(t)\frac{\mu}{a(t)r(t)^2}-a(t)\frac{\omega(t)^2r(t)^2}{a(t)}
+    #            =-\frac{\mu}{r(t)^2}+\omega(t)^2r(t)+a(t)A+a(t)Bt+\frac{\mu}{r(t)^2}-\omega(t)^2r(t)^2}
+    #            =a(t)A+a(t)Bt
+    # So, the steering program has terms relating to A and B, as well as terms which
+    # cancel out gravity and centrifugal force, removing them from the integration
+    # and making things much simpler.
+    #
+    # There is an optional yaw steering term -- the default value will generate no yaw
+    # steering, keeping the thrust in the plane defined by the position and velocity vectors.
+
+    # resolve the basis vectors
+    rhat,qhat,hhat=resolve_basis(rv=rv,vv=vv)
+    r=vlength(rv) #Distance from center
+    vq=vdot(vv,qhat) #Downrange velocity
+    omega=vq/r #angular velocity, rad/s. This is used to compute "centrifugal force"
+    # Get acceleration at requested time from acceleration at epoch
+    at=a(a0=a0,ve=ve,t=t)
+    # vertical component of thrust vector
+    fdotr=A+B*t+mu/(r**2*at)-(omega**2*r)/(at)
+    # crossrange component of thrust vector
+    fdoth=K*0
+    # downrange component of thrust vector, whatever is left.
+    fdotq=np.sqrt(1-fdoth**2-fdotr**2)
+    # Compose thrust vector from components and basis vectors
+    f=fdotr*rhat+fdotq*qhat+fdoth*hhat
+    return f
+
+
+def predict_vstate(*,rv0:np.array,vv0:np.array,mu:float,
+                   A:float,B:float,t:float)->tuple[float,float]:
+    """
+    Predict the vertical state of the vehicle a given time after the epoch
+
+    :param rv0: position vector at the epoch
+    :param vv0: velocity vector at the epoch
+    :param mu: gravitational constant
+    :param A: Pitch steering coefficient at the epoch
+    :param B: Pitch steering coefficient at the epoch
+    :param t: Time since the epoch at which to evaluate the prediction, may be an array
+    :return:
+    """
+
+
+def b(n:int,*,T:float,ve:float,tau:float)->float:
+    if n==0:
+        return -ve*ln(1-T/tau)
+    else:
+        return b(n-1,T=T,ve=ve,tau=tau)*tau-ve*T**n/n
+
+
+def c(n:int,*,T:float,ve:float,tau:float)->float:
+    if n==0:
+        return b(0,T=T,ve=ve,tau=tau)*T-b(1,T=T,ve=ve,tau=tau)
+    else:
+        return c(n-1,T=T,ve=ve,tau=tau)-(ve*T**(n+1))/(n*(n+1))
+
+
+def calcAB(*,rv:np.array,vv:np.array,
+             rT:float,rdotT:float,
+             a0:float,ve:float,
+             T:float)->tuple[float,float]:
+    """
+    Calculate the steering constants. These constants will enable steering to the vertical state target
+    at the given burnout time.
+
+    :param oldA: Old value of steering constant A
+    :param oldB: Old value of steering constant B
+    :param T: Current estimate of time-to-go
+    :param
+    :return: Tuple of (newA,newB)
+    """
+    rhat,qhat,hhat=resolve_basis(rv=rv,vv=vv)
     r=vlength(rv)
-    return -mu*rv/r**3
-
-class PEG:
-    def __init__(self,r_e:float=6378137.0,
-                      mu:float=398600.4415e9,
-                      T:float=250.0,
-                      a0:float=15.0,
-                      rdot:float=0.0,
-                      rT:float=None,
-                      hT:float=185000.0,
-                      v_e:float=4500.0):
-        """
-        All units should be in a consistent scale, such as SI.
-        :param r_e: Surface radius of Earth -- only really relevant
-                    to caclulate altitude for outside reference
-        :param mu: Gravitational parameter GM (for SI, m**3/s**2)
-        :param T: Initial estimate of time to go
-        :param a0: Current acceleration measurement
-        :param rdotT: target vertical speed
-        :param rT: target radius
-        :param hT: target altitude, used if rT is None
-        :param v_e: effective exhaust velocity, default value is typical for hydrolox upper stage
-        """
-        self.r_e=r_e
-        self.mu=mu
-        self.T = T
-        self.a0 = a0
-        self.rdotT = rdot  # Target vertical speed
-        if rT is None:
-            self.rT = self.r_e + hT
-        else:
-            self.rT = rT
-        self.v_e = v_e  # Typical value for hydrolox upper stage
-        self.tau=None
-        self.A=0
-        self.B=0
-        self.r=self.r_e+75000.0 #Current radius
-        self.rdot=1000.0 #Current vertical speed
-        self.qdot=1000.0 #Current horizontal speed
-        self.T_stopsteer=7
-
-    def calc_tau(self):
-        self.tau = self.v_e / self.a0
-
-    def a(self, t):
-        return self.a0 / (1 - t / self.tau)
-
-    def b(self, n, t=None):
-        r"""
-        Velocity steering integral b_n(t), equation 7a and 7b in original document
-
-        $$\begin{eqnarray*}
-        b_0(T)&=& \int_0^T    a(t) dt \\
-              &=& -v_e\ln\left(1-\frac{T}{\tau}\right)\tag{7a}\\
-              &=& \Delta v\\
-        b_n(T)&=& \int_0^T t^na(t) dt \\
-              &=& b_{n-1}(T)\tau-\frac{v_eT^n}{n}\tag{7b}
-        \end{eqnarray*}$$
-
-        $n=0$ gives ideal $\delta v$ over given time. $n>0$ gives moments, needed by other
-        equations to calculate the end conditions. The equations as given in the original
-        document use burnout time $T$ as the argument, but this is valid for any time
-        between $t=0$ (now) and $t=T$ (burnout).
-
-        :param n: moment of steering integral to calculate.
-        :param t: Time from present at which to evaluate integral. Default value is self.T (time to burnout)
-        :uses tau:
-        :uses v_e:
-        :return: nth moment of delta-v
-        """
-        if t is None:
-            t=self.T
-        if n == 0:
-            result=-self.v_e * ln(1 - t / self.tau)
-        else:
-            result=self.b(n - 1, t) * self.tau - self.v_e * t ** n / n
-        return result
-
-    def c(self, n, t=None):
-        """
-        Distance steering integral c_n(t), equation 7c and 7d in original document.
-
-        $$\begin{eqnarray*}
-        c_0(T)&=&\int_0^T \int_0^t a(s) ds dt\\
-              &=&b_0(T)T-b_1(T)\tag{7c}\\
-        c_n(T)&=&\int_0^T \int_0^t s^n a(s) ds dt \\
-              &=&c_{n-1}\tau-\frac{v_eT^{n+1}}{n(n+1)}\tag{7d}
-        \end{eqnarray*}$$
-
-        The zero order moment $c_0(t)$ is the integral of $b_0(s)$ from $s=0$
-        to $s=t$, and is therefore the distance traveled by the powered object,
-        neglecting outside forces, relative to an unpowered object with the same
-        initial state. Higher order moments are needed to calculate end
-        conditions. The equations as given in the original document use burnout
-        time $T$ as the argument, but this is valid for any time between $t=0$
-        (now) and $t=T$ (burnout).
-
-        :param n: moment of steering integral to calculate.
-        :param t: Time from present at which to evaluate integral. Default value is self.T (time to burnout)
-        :return:
-        """
-        if t is None:
-            t=self.T
-        if n == 0:
-            result=self.b(0, t) * t - self.b(1, t)
-        else:
-            result=self.c(n - 1, t) * self.tau - self.v_e * t ** (n + 1) / (n * (n + 1))
-        return result
-
-    def calc_ab(self):
-        """
-        Given the current vertical state r and rdot, and current estimate of burn time
-        remaining T, update the steering constants A and B
-
-        This is done by solving the explicit guidance equations using Cramer's rule
-        rdotT=rdot+b0*A+b1*A
-        rT=r+rdot*T+c0*A+c1*B
-
-        Getting the A and B terms on one side gives:
-        kb=rdotT-rdot=b0*A+b1*B
-        kc=rT-r-rdot*T=c0*A+c1*B
-
-        This is formed into matrices and vectors to apply linear algebra
-        [A][x]=[y]
-        [A]=[b0,b1]
-            [c0,c1]
-        [x]=[A]
-            [B]
-        [y]=[kb]
-            [kc]
-        Watch out for the notation collision here -- B is not the
-        same as b.
-
-        d=b0*c1-b1*c0 #determinant of [A]
-        nA=kb*c1-b1*kc
-        nB=b0*kc-kb*c0
-
-        A=nA/d
-        B=nB/d
-        """
-        if self.T<self.T_stopsteer:
-            # Stop calculating steering constants when less than 7 seconds to go
-            return
-        # Solve the explicit guidance equations. Store all the intermediate values in
-        # fields so that we can see and plot them later if we want
-        self.kb=self.rdotT-self.rdot
-        self.kc=self.rT-self.r-self.rdot*self.T
-        self.b0=self.b(0)
-        self.b1=self.b(1)
-        self.c0=self.c(0)
-        self.c1=self.c(1)
-        self.d=self.b0*self.c1-self.b1*self.c0 #determinant of [A]
-        self.nA=self.kb*self.c1-self.b1*self.kc #determinant of [A] with left column replaced by [B]
-        self.nB=self.b0*self.kc-self.kb*self.c0 #determinant of [A] with right column replaced by [B]
-        self.A=self.nA/self.d
-        self.B=self.nB/self.d
-        #Check that the solved-for values actually solve the equations
-        assert math.isclose(self.rT,self.r+self.rdot*self.T+self.c0*self.A+self.c1*self.B,abs_tol=1e-3)
-        assert math.isclose(self.rdotT,self.rdot+self.b0*self.A+self.b1*self.B,abs_tol=1e-3)
-
-    def estimate_tgo(self):
-        """
-        Given the current state and steering constants, update the time to go
-        :return:
-        """
-        pass
-
-    def project_steering(self, dt):
-        self.A=self.A+self.B*dt
-        self.T=self.T-dt
-
-    def fly(self,dt=2.0, fps=16):
-        """
-
-        Given current steering constants, fly the rocket for one major cycle
-        and update the rocket state
-
-        :param dt: Major cycle length, can be any finite number, not necessarily
-                   infinitesimal
-        :param ddt: Numerical integrator step length, intended to be infinitesimal,
-                    use as small a value as possible when balanced against roundoff
-                    error and computation time. Doesn't have to be used, if not
-                    using a numerical integrator.
+    rdot=vdot(rhat,vv)
+    kb=rdotT-rdot
+    kc=rT-r-rdot*T
+    tau0=tau(a0=a0,ve=ve)
+    b0=b(0,T=T,ve=ve,tau=tau0)
+    b1=b(1,T=T,ve=ve,tau=tau0)
+    c0=c(0,T=T,ve=ve,tau=tau0)
+    c1=c(1,T=T,ve=ve,tau=tau0)
+    newB=(kc*b0-c0*kb)/(c1*b0-c0*b1)
+    newA=kb/b0-b1*newB/b0
+    return newA,newB
 
 
-        :sets r:
-        :sets rdot:
-        :return: None
-        """
-        #In the base case, since predict_r and predict_rdot are not approximations, we
-        #can use them as-is to update the vertical state.
-        r=self.predict_r(dt)
-        rdot=self.predict_rdot(dt)
-        def F(t,y):
-            """
-            Derivative of state vector with respect to time. This takes into
-            account two-body gravity and powered flight steering.
-
-            :param t: Input time
-            :param y: Input state vector
-            :return: Derivative of each element of the state vector in a form
-            suitable for ODE solvers.
-            """
-            x,y,dx,dy=y #State vector elements
-            rv=np.array([[x],[y]]) #position vector
-            vv=np.array([[dx],[dy]]) #velocity vector
-            r=vlength(rv) #radial distance
-            v=vlength(vv) #speed
-            rhat=rv/r #radial direction
-            vhat=vv/v #speed direction
-            vprojr=vdot(vv,rhat)*rhat #projection of speed in radial direction
-            rdot=vlength(vprojr) #vertical speed
-            vprojq=vv-vprojr     #projection of speed perpendicular to radial direction
-            qdot=vlength(vprojq) #horizontal speed
-            qhat=vprojq/qdot     #horizontal direction
-            omega=qdot/r         #angular velocity
-            #verification
-            if not abs(vdot(vprojr,vprojq))<0.001:
-                print("About to raise assertion error")
-            assert abs(vdot(vprojr,vprojq))<0.001
-            assert math.isclose(v**2,qdot**2+rdot**2)
-            grav=self.mu/r**2                    # gravity acceleration magnitude
-            cent=omega**2*r                      # centrifugal acceleration magnitude
-            a=self.a(t)                          # Magnitude of thrust acceleration
-            fdotr=self.A+self.B*t+(grav-cent)/a  # Component of thrust direction in r direction
-            fdotq=np.sqrt(1-fdotr**2)            # component of thrust direction in q direction
-            fhat=fdotr*rhat+fdotq*qhat           # Thrust direction vector
-            f=fhat*a                             # Thrust acceleration vector
-            dv=-rhat*grav+f
-            ddx=dv[0][0]
-            ddy=dv[1][0]
-            return np.array([dx,dy,ddx,ddy])
-        x0=np.array([self.r,0,self.rdot,self.qdot])
-        _,(x1,y1,dx1,dy1)=rk4(F=F,t0=0,y0=x0,t1=dt,fps=fps)
-        self.rv=vcomp((x1,y1))
-        self.vv=vcomp((dx1,dy1))
-        self.rhat=self.rv/vlength(self.rv)
-        self.vprojr = vdot(self.vv, self.rhat) * self.rhat  # projection of speed in radial direction
-        self.rdot = vlength(self.vprojr)                    # vertical speed
-        self.vprojq = self.vv - self.vprojr                 # projection of speed perpendicular to radial direction
-        self.qdot = vlength(self.vprojq)                    # horizontal speed
-        self.qhat = self.vprojq / self.qdot                 # horizontal direction
-        self.omega = self.qdot / r                          # angular velocity
-        self.r=vlength(self.rv)
-        print(self)
-
-    def update_abt(self,dt=2.0):
-        self.A+=self.B*dt
-        self.T-=dt
-        self.a0=self.a(dt)
-        self.tau-=dt
+def calcT(*,rv:np.array,vv:np.array,
+          rT:float,vqT:float,
+          a0:float,ve:float,
+          mu:float,
+          A:float,B:float,oldT:float)->float:
+    rhat,qhat,hhat=resolve_basis(rv=rv,vv=vv)
+    r=vlength(rv)
+    hT=rT*vqT
+    hv=vcross(rv,vv)
+    h=vlength(hv)
+    dh=hT-h
+    rbar=(rT+r)/2.0
+    vq=vdot(vv,qhat) #Downrange velocity
+    omega=vq/r #angular velocity, rad/s. This is used to compute "centrifugal force"
+    omegaT=vqT/rT #angular velocity, rad/s. This is used to compute "centrifugal force"
+    aT=a(a0=a0,ve=ve,t=oldT)
+    fr=A+0*B+mu/(r**2*a0)-omega**2*r/a0
+    frT=A+oldT*B+mu/(rT**2*aT)-omegaT**2*rT/aT
+    frd=(frT-fr)/oldT
+    #No yaw steering for now
+    fh=0
+    fhT=0
+    fhd=(fhT-fh)/oldT
+    fq=1-fr**2/2-fh**2/2
+    fqd=-fr*frd-fh*fhd
+    fqdd=-frd**2/2-fhd**2/2
+    tau0=tau(a=a0,ve=ve)
+    dvn=dh/rbar+ve*oldT*(fqd+fqdd*tau0)+fqdd*ve*oldT**2/2.0
+    dvd=fq+fqd*tau0+fqdd*tau0**2
+    dv=dvn/dvd
+    newT=tau0*(1-np.exp(-dv/ve))
+    return newT
 
 
-    def predict_r(self,t):
-        """
-        Predict the radius distance at some arbitrary time in the future.
+def calcT_int(*,rv:np.array,vv:np.array,
+          rT:float,vqT:float,
+          a0:float,ve:float,
+          mu:float,
+          A:float,B:float,oldT:float,fps:int=128,
+          verbose:bool=False)->float:
+    """
+    Calculate the time needed to reach the targets given the current
+    steering constants
+    :param rv: Position vector at epoch
+    :param vv: Velocity vector at epoch
+    :param rT: Target altitude
+    :param vqT: Target downrange velocity
+    :param a0: Acceleration at epoch
+    :param ve: Effective exhaust velocity
+    :param mu: Gravitational parameter
+    :param A: Steering constant at epoch
+    :param B: Steering constant at epoch
+    :param oldT: Previous estimated time to burnout.
+                 Not used in this routine, kept to
+                 keep interface compatible with calcT()
+    :param fps: "frames per second". Integration time-step is 1/fps.
+                Use a power of two, so that the integration timestep
+                is perfectly representable in floating-point.
+    :return: New time to burnout
+
+    This calculates the same thing as calcT() except it uses
+    a numerical integration instead of approximate integration.
+    For every time step, it propagates the state vector, calculates
+    the steering from the steering constants and the gravitational
+    and centrifugal terms, and terminates the integration once the
+    target angular momentum is reached, and returns the amount of time
+    that took.
+    """
+    frames=0
+    hT=rT*vqT
+    rv=rv.copy()
+    vv=vv.copy()
+    hv = vcross(rv, vv)
+    h = vlength(hv)
+    if verbose:
+        hs=[]
+        rs=[]
+        vs=[]
+        ts=[]
+        aa=[]
+        rdots=[]
+    while h<hT:
+        t=frames/fps
+        at=a(a0=a0,ve=ve,t=t)
+        fhat=steer(rv=rv,vv=vv,mu=mu,t=t,a0=a0,ve=ve,A=A,B=B)
+        av_thrust=at*fhat
+        av_grav=-rv*mu/vlength(rv)**3
+        av=av_thrust+av_grav
+        dvv=av/fps
+        drv=vv/fps
+        vv+=dvv
+        rv+=drv
+        hv=vcross(rv,vv)
+        h=vlength(hv)
+        if verbose:
+            hs.append(h)
+            ts.append(t)
+            rs.append(vlength(rv))
+            vs.append(vlength(vv))
+            aa.append(vlength(av))
+            rdots.append(vdot(vv,rv)/vlength(rv))
+        frames+=1
+    if(verbose):
+        plt.figure(1)
+        plt.subplot(411)
+        plt.plot(ts,hs)
+        plt.ylabel('h')
+        plt.subplot(412)
+        plt.plot(ts,rs)
+        plt.ylabel('r')
+        plt.subplot(413)
+        plt.plot(ts,vs)
+        plt.ylabel('v')
+        plt.subplot(414)
+        plt.plot(ts,rdots)
+        plt.ylabel('rdot')
+        plt.xlabel('t')
+        plt.show()
+    return t
 
 
-        :param t: Time from now. Can be anything, but should be 0<t<T. No guarantee
-        of there being fuel remaining if t>T, and there is a singularity at t=tau
-        :uses r:
-        :uses rdot:
-        :return: radius distance
+def PEG_major_cycle(*,rv:np.array,vv:np.array,
+                    A:float,B:float,T:float,
+                    ve:float,a0:float,
+                    rT:float,rdotT:float,vqT:float,mu:float,
+                    dt:float,
+                    n_iters:int=5)->tuple[float,float,float]:
+    """
+    Run the Powered Explicit Guidance major cycle.
 
-        Given the assumptions of the problem (two-body gravity with no J2
-        and atmosphere, single-stage rocket with constant thrust and v_e),
-        there are no approximations. This should be perfect.
+    :param rv: Position vector at new epoch
+    :param vv: Velocity vector at new epoch
+    :param A: Old pitch steering constant A
+    :param B: Old pitch steering constant B
+    :param T: Old time-to-go
+    :param ve: Effective exhaust velocity at new epoch
+    :param a0: Acceleration due to thrust at new epoch
+    :param rT: Target distance from center
+    :param rdotT: Target vertical velocity
+    :param vqT: Target downrange velocity
+    :param mu: Central body gravitational constant
+    :param dt: Time since last step
+    :return: Tuple of new values of A, B, and T.
+    """
+    #Update the t=0 epoch
+    T-=dt
+    A+=B*dt
+    for i_iter in range(n_iters):
+        A,B=calcAB(rv=rv,vv=vv,rT=rT,rdotT=rdotT,a0=a0,ve=ve,tau=tau,T=T)
+        T=calcT(rv=rv,vv=vv,rT=rT,vqT=vqT,a0=a0,ve=ve,mu=mu,A=A,B=B,oldT=T)
 
-        """
-        result=self.r+self.rdot*t+self.c(0,t)*self.A+self.c(1,t)*self.B
-        return result
-
-    def predict_rdot(self,t):
-        """
-        Predict the vertical speed at some arbitrary time in the future
-
-        :param t:
-        :return:
-        """
-        result=self.rdot+self.b(0,t)*self.A+self.b(1,t)*self.B
-        return result
-
-def main():
-    pass
 
 
-if __name__ == "__main__":
-    main()
+@dataclass
+class PEGState:
+    A: float
+    B: float
+    T: float
+
+
+def peg_guide(*,planet:SpicePlanet,rT:float,rdotT:float,vqT:float,yaw0:float,A0:float,B0:float,T0:float)->Callable[...,np.ndarray]:
+    state=PEGState(A=A0,B=B0,T=T0)
+    def inner(*, t: float, y: np.ndarray, dt: float, major_step: bool, vehicle: Vehicle)->np.ndarray:
+            # Code that uses rT, rdotT, vqT, A, B, and T
+            vehicle_thrust=0
+            vehicle_mdot=0
+            for engine in vehicle.engines:
+                this_engine_thrust=engine.thrust10*engine.throttle
+                this_engine_mdot=this_engine_thrust/engine.ve0
+                vehicle_thrust+=this_engine_thrust
+                vehicle_mdot+=this_engine_mdot
+            vehicle_ve=vehicle_thrust/vehicle_mdot
+            vehicle_a0=vehicle_thrust/vehicle.mass()
+            rv=y[:3].reshape(-1,1)
+            vv=y[3:].reshape(-1,1)
+            state.A,state.B,state.T=PEG_major_cycle(rv=rv,vv=vv,
+                                                    A=state.A,B=state.B,T=state.T,
+                                                    ve=vehicle_ve,a0=vehicle_a0,
+                                                    rT=rT,rdotT=rdotT,vqT=vqT,
+                                                    mu=planet.mu,dt=dt)
+            # Code that calculates a guidance vector `result`.
+            # Resolve the downrange basis vectors, considering the current motion
+            # of the rocket which has considerable downrange motion already.
+            rhat, qhat, hhat = resolve_basis(rv=rv, vv=vv)
+            r = vlength(rv)
+            hv = vcross(rv, vv)
+            vq = vdot(vv, qhat)  # Downrange velocity
+            omega = vq / r  # angular velocity, rad/s. This is used to compute "centrifugal force"
+            fdotr=state.A+state.B*0+(planet.mu/r**2-omega**2*r)/vehicle_a0
+            fnotdotr=np.sqrt(1-fdotr**2)
+            fdotq=fnotdotr*np.cos(np.deg2rad(yaw0))
+            fdoth=fnotdotr*np.sin(np.deg2rad(yaw0))
+            result=fdotr*rhat+fdotq*qhat+fdoth*hhat
+            return result
+    return inner()
+
