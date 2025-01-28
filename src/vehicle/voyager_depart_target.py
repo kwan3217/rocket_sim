@@ -493,11 +493,11 @@ def export(vgr_id:int):
 def main():
     init_spice()
     for vgr_id in (1,2):
-        pm_targeter=PMTargeter(vgr_id=vgr_id)
-        pm_targeter.target(optimize=True)
+        #pm_targeter=PMTargeter(vgr_id=vgr_id)
+        #pm_targeter.target(optimize=False)
         pm_guess=best_pm_solution(vgr_id=vgr_id)
         centaur2_targeter=Centaur2Targeter(pm=pm_guess)
-        centaur2_targeter.target(optimize=False)
+        centaur2_targeter.target(optimize=True)
     #for vgr_id in (1,2):
     #    export(vgr_id)
 

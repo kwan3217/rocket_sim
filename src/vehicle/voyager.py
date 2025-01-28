@@ -103,29 +103,34 @@ Final state (simt, ICRF, SI):
                                vx:    6.6401840157381e+03  vy:    7.0938382526628e+03  vz:    8.3795263368295e+03
                                     0x1.9f02f1ba7c933p+12       0x1.bb5d697b9fc83p+12       0x1.05dc35f015698p+13
 """}
-centaur2_solutions_str={1:"""Voyager 1 backpropagation through Centaur burn 2
- dpitch: -4.4164552842171e+00 (-0x1.1aa734107d5bdp+2)
- dthr: -9.6115299246784e-03 (-0x1.3af35b58734eep-7)
- dyaw: -4.3590393700061e-02 (-0x1.6517ae6b919f3p-5)
- pitchrate: 4.8457188530925e-03 (0x1.3d91abffe89a4p-8)
- fps during burn: 10 
- fps during parking orbit: 1 
- Initial state (simt, ICRF, SI): 
-  simt=0 in ET: -7.0441579085945e+08  (-0x1.4fe44176e027dp+29) (1977-09-05T12:56:49.140 TDB,1977-09-05T12:56:00.957Z)
-  simt:   3.6000324509525e+03  rx:    6.1670620991322e+06  ry:   -2.5491823405092e+06  rz:   -1.6001965204496e+06
-        0x1.c20109d6947aep+11       0x1.7868586582e92p+22      -0x1.372df2b95ce84p+21      -0x1.86ac4853c2edfp+20
-                               vx:    8.1875867795104e+03  vy:    8.9161670584519e+03  vz:    4.5422888535830e+03
-                                    0x1.ffb96372e96ecp+12       0x1.16a15622bddc9p+13       0x1.1be49f24ef458p+12
-State just prior to Centaur burn 2 (simt, ICRF, SI): 
-  simt:   3.1898324509525e+03  rx:    3.0090531901394e+06  ry:   -5.0533493988030e+06  rz:   -2.8456944924418e+06
-        0x1.8ebaa3702e148p+11       0x1.6f50e98567c9cp+21      -0x1.346e95985fcdfp+22      -0x1.5b5ff3f085542p+21
-                               vx:    6.9351764858879e+03  vy:    3.2685011881941e+03  vz:    1.5259224433481e+03
-                                    0x1.b172d2e2ddcecp+12       0x1.989009bbd2d90p+11       0x1.7d7b094fd32c8p+10
+centaur2_solutions_str={1:"""Voyager 1 backpropagation through Centaur 2 burn
+dpitch: -4.4164552842503e+00 (-0x1.1aa73410867dbp+2)
+dyaw: -4.3590393660760e-02 (-0x1.6517ae662ad7fp-5)
+dthr: -9.6115297747416e-03 (-0x1.3af35b0605959p-7)
+pitchrate: 4.8457186584881e-03 (0x1.3d91ab29f0544p-8)
+fps: 100 
+ simt=0 in ET: -7.0441579085945e+08  (-0x1.4fe44176e027dp+29) (1977-09-05T12:56:49.140 TDB,1977-09-05T12:56:00.957Z)
+Initial state (simt, ICRF, SI): 
+simt:   3.6000224509525e+03  rx:    6.1669802228837e+06  ry:   -2.5492715020224e+06  rz:   -1.6002419432390e+06
+           0x1.c200b7eb0f5c2p+11       0x1.786710e43b9e3p+22      -0x1.3730bc042457ep+21      -0x1.86af1f1781d1bp+20
+                              vx:    8.1876629249787e+03  vy:    8.9161355826285e+03  vz:    4.5422690399699e+03
+                                   0x1.ffba9b5738f38p+12       0x1.16a115ac58590p+13       0x1.1be44dfcdafe5p+12
+Final state (simt, ICRF, SI): 
+simt:   3.1897924509525e+03  rx:    3.0091300275335e+06  ry:   -5.0530993104807e+06  rz:   -2.8455620430381e+06
+           0x1.8eb95bc219998p+11       0x1.6f53503863771p+21      -0x1.346aad3deea85p+22      -0x1.5b5bd05824607p+21
+                              vx:    6.9348978341117e+03  vy:    3.2674891753943e+03  vz:    1.5253834628964e+03
+                                   0x1.b16e5d874d2dcp+12       0x1.986fa7532812dp+11       0x1.7d588aa7f5cc3p+10
 State just after Centaur burn 1 (simt, ICRF, SI): 
-  simt:   5.9673245095253e+02  rx:   -3.2645531625213e+06  ry:    4.9345660010038e+06  rz:    2.7971187106339e+06
-        0x1.2a5dc0f3eb850p+9       -0x1.8e81494cd7f6ap+21       0x1.2d2e98010722ep+22       0x1.5571f5af60ce4p+21
-                               vx:   -6.7589049552103e+03  vy:   -3.5314790162879e+03  vz:   -1.6589917219292e+03
-                                   -0x1.a66e7ab25088fp+12      -0x1.b96f5419f75f7p+11      -0x1.9ebf785f412c1p+10
+simt:   5.9599245095253e+02  rx:   -3.2482120645243e+06  ry:    4.9397376863150e+06  rz:    2.7993087051377e+06
+           0x1.29ff08a1fffffp+9       -0x1.8c82a08425574p+21      0x1.2d7f66bec95b0p+22      0x1.55b665a41f3e8p+21
+                              vx:   -6.7709701234338e+03  vy:   -3.5183080653125e+03  vz:   -1.6513636562164e+03
+                                   -0x1.a72f85a026560p+12       -0x1.b7c9dbabc94bbp+11       -0x1.9cd74624b914fp+10
+Iterations: 0
+dpitch=-4.416455 deg, dyaw=-0.043590 deg, dthr=-0.009612, pitchrate=0.004846 deg/s
+ahist=3533.81 nmi,acalc=3532.8733026493824 nmi,da=0.9366973506175782 nmi,     4.7 sigma
+ehist=3.8e-05 ,ecalc=0.0003007568171320429 ,de=-0.0002627568171320429 ,    -3.8 sigma
+ihist=28.5201 deg,icalc=28.52002426976721 deg,di=7.573023279050517e-05 deg,     0.0 sigma
+Cost: 3.603e+01
 """,2:"""Voyager 2 backpropagation through Centaur burn 2
  dpitch: -1.3433920246681e+01 (-0x1.ade2acb692223p+3)
  dthr: -2.2020571000027e-02 (-0x1.68c8f81232fcdp-6)
