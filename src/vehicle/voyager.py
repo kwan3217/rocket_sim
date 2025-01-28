@@ -7,6 +7,7 @@ import re
 from collections import namedtuple
 from dataclasses import dataclass
 from math import isclose
+from pathlib import Path
 
 import numpy as np
 from spiceypy import furnsh, gdpool, str2et
@@ -73,8 +74,8 @@ pm_solutions_str={1:"""Voyager 1 backpropagation through PM burn
  dyaw: -1.3109881372814e-01 (-0x1.0c7d88ec0dcfdp-3)
  yawrate: 0.0000000000000e+00 (0x0.0p+0)
  fps: 100 
- Initial state (simt, ICRF, SI): 
   simt=0 in ET: -7.0441579085945e+08  (-0x1.4fe44176e027dp+29) (1977-09-05T12:56:49.140 TDB,1977-09-05T12:56:00.957Z)
+ Initial state (simt, ICRF, SI): 
   simt:   3.8152424509525e+03  rx:    7.8270056974723e+06  ry:   -4.7697578535259e+05  rz:   -5.3623021101710e+05
         0x1.dce7c22880000p+11       0x1.ddb8f6ca362ecp+22      -0x1.d1cbf243377d8p+18      -0x1.05d4c6c0a6ef9p+19
                                vx:    7.6604530261200e+03  vy:    1.0808671548372e+04  vz:    5.5813798253055e+03
@@ -90,8 +91,8 @@ Final state (simt, ICRF, SI):
  dyaw: -5.5151257204035e-01 (-0x1.1a5fdb187e056p-1)
  yawrate: 0.0000000000000e+00 (0x0.0p+0)
  fps: 100 
- Initial state (simt, ICRF, SI): 
   simt=0 in ET: -7.0579256756118e+08  (-0x1.508c51bc7d4dap+29) (1977-08-20T14:30:32.438 TDB,1977-08-20T14:29:44.256Z)
+ Initial state (simt, ICRF, SI): 
   simt:   3.7797441831827e+03  rx:    7.5134383545304e+06  ry:   -1.3110472104682e+06  rz:    2.0893893198094e+06
         0x1.d877d05940000p+11       0x1.ca95796b0a031p+22      -0x1.4014735e13e1ep+20      0x1.fe1ad51df07c0p+20
                                vx:    5.9205250587370e+03  vy:    8.8788614501394e+03  vz:    9.4617661353858e+03
@@ -189,29 +190,29 @@ def parse_pm(pm_solution_str:str)->ParsedPM:
         vgr_id=int(match.group("vgr_id"))
     else:
         raise ValueError("Couldn't parse vgr_id")
-    def parse_steer_param(steer_param:str,line:str):
-        if match:=re.match(fr"{steer_param}:\s+(?P<decval>[-+]?[0-9].[0-9]+e[-+][0-9]+)\s+\((?P<hexval>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)\)",line):
-            decval=float(match.group("decval"))
-            hexval=float.fromhex(match.group("hexval"))
-            if not isclose(decval,hexval):
-                raise ValueError(f"{steer_param} dec and hex don't match")
-        else:
-            raise ValueError(f"Couldn't parse {steer_param}")
-        return hexval
-    dpitch=parse_steer_param("dpitch",lines[1])
-    dthr=parse_steer_param("dthr",lines[2])
-    dyaw=parse_steer_param("dyaw",lines[3])
-    yawrate=parse_steer_param("yawrate",lines[4])
+    def parse_steer_params(steer_params:list[str],lines:list[str]):
+        result=[None]*len(steer_params)
+        for line in lines:
+            if match:=re.match(fr"(?P<tag>[a-zA-Z_][a-zA-Z0-9_]*):\s+(?P<decval>[-+]?[0-9].[0-9]+e[-+][0-9]+)\s+\((?P<hexval>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)\)",line):
+                if match.group("tag") not in steer_params:
+                    raise ValueError(f"Unrecognized steering parameter {match.group('tag')}")
+                decval=float(match.group("decval"))
+                hexval=float.fromhex(match.group("hexval"))
+                if not isclose(decval,hexval):
+                    raise ValueError(f"{match.group('tag')} dec and hex don't match")
+                result[steer_params.index(match.group("tag"))]=hexval
+            else:
+                raise ValueError(f"Couldn't parse line `{line}`")
+        return result
+    dpitch,dyaw,dthr,yawrate=parse_steer_params(["dpitch","dyaw","dthr","yawrate"],lines[1:5])
     if match:=re.match(r"fps:\s+(?P<fps>\d+)",lines[5]):
         fps=match.group("fps")
     else:
         raise ValueError("Couldn't parse fps")
-    if not lines[6]=="Initial state (simt, ICRF, SI):":
-        raise ValueError("Unexpected initial state header")
     if match:=re.match("simt=0 in ET:\s+(?P<decval>[-+]?[0-9].[0-9]+e[-+][0-9]+)\s+"
                        "\((?P<hexval>[-+]?0x[01].[0-9a-fA-F]+p[-+][0-9]+)\)\s+"
                        "\((?P<isotdb>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]+)\s+TDB,\s*"
-                         "(?P<isoutc>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]+)Z\)",lines[7]):
+                         "(?P<isoutc>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]+)Z\)",lines[6]):
         simt0_dec=float(match.group("decval"))
         et_t0=float.fromhex(match.group("hexval"))
         isotdb=match.group("isotdb")
@@ -225,6 +226,8 @@ def parse_pm(pm_solution_str:str)->ParsedPM:
             raise ValueError(f"simt0 and Gregorian UTC don't match: {et_t0=}, {isoutc=} {str2et(isoutc)=}")
     else:
         raise ValueError("Couldn't parse simt=0")
+    if not lines[7]=="Initial state (simt, ICRF, SI):":
+        raise ValueError("Unexpected initial state header")
     def parse_state(lines:list[str]):
         if match:=re.match(r"simt:\s+(?P<simt_dec>[-+]?[0-9].[0-9]+e[-+][0-9]+)"
                            r"\s+rx:\s+(?P<rx_dec>[-+]?[0-9].[0-9]+e[-+][0-9]+)"
@@ -293,6 +296,8 @@ def parse_pm(pm_solution_str:str)->ParsedPM:
     return result
 
 
+
+
 def best_pm_solution(*,vgr_id:int)->ParsedPM:
     # Parameters are:
     #   0 - dpitch, pitch angle between pure prograde and target in degrees
@@ -302,14 +307,26 @@ def best_pm_solution(*,vgr_id:int)->ParsedPM:
     #       simultaneously so as to not affect mdot, so the propellant
     #       will drain exactly as fast as before.
     #   3 - yawrate - change in yaw vs time in deg/s.
-    pm_solution=parse_pm(pm_solutions_str[vgr_id])
+    # Check for existence of optimal run in data/ or products/. The one in data/ has been
+    # selected by a human to be the best, the one in products/ is the latest run.
+    ps=[y for y in [x/f"vgr{vgr_id}_pm_optimal_run.txt" for x in (Path("data"),Path("products"))] if y.exists()]
+    if len(ps)>0:
+        with open(ps[0],"rt") as inf: soln_str=inf.read()
+    else:
+        soln_str=pm_solutions_str[vgr_id]
+    pm_solution=parse_pm(soln_str)
     if not vgr_id==pm_solution.vgr_id:
         raise AssertionError("Solution does not match request")
     return pm_solution
 
 
+def best_centaur2_initial_guess(*,vgr_id:int)->list[float,float,float,float]:
+    initial_guess={1:[-4.4164552842503e+00,-4.3590393660760e-02,-9.6115297747416e-03,4.8457186584881e-03], #Best Voyager 1 result
+                   2:[-1.3433920246681e+01, 9.0870458935636e+00,-2.2020571000027e-02,5.1374694020877e-02]} #Best Voyager 2 result
+    return initial_guess[vgr_id]
 
-def best_pm_initial_guess(*,vgr_id:int)->ParsedPM:
+
+def best_pm_initial_guess(*,vgr_id:int)->list[float,float,float,float]:
     pm_solution=best_pm_solution(vgr_id=vgr_id)
     return [pm_solution.dpitch,pm_solution.dyaw,pm_solution.dthr,pm_solution.yawrate]
     #initial_guess=[float.fromhex("-0x1.72dc4a7dd46d7p+0"),
