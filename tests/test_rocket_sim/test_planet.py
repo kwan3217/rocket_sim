@@ -9,7 +9,7 @@ from atmosphere.atmosphere import SimpleEarthAtmosphere
 from spiceypy import furnsh, kclear
 
 from rocket_sim.planet import Earth
-from vehicle.voyager import init_spice, voyager_et0
+from voyager.voyager_depart_target import voyager_et0, init_spice
 
 
 @pytest.fixture

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from atmosphere.atmosphere import Atmosphere, SimpleEarthAtmosphere
+from bmw import elorb
 from kwanmath.geodesy import xyz2lla, lla2xyz
 from kwanmath.vector import vcross, vnormalize, vdot
 from spiceypy import furnsh, kclear, gdpool, pxform
@@ -70,6 +71,41 @@ class Planet:
         the actual rotation axis in 1977 and J2000/ICRF.
         """
         return vcross(np.array([0,0,self.w0]),rj.reshape(-1))
+    def downrange_frame(self,rj:np.ndarray,azimuth:float,deg:bool=True):
+        """
+        Return a matrix which transforms a vector in the downrange frame to
+        one in the inertial frame
+        :param rj: Location in the inertial frame
+        :param azimuth: range azimuth east of true north
+        :param deg: If true, azimuth is in degrees, otherwise radians
+        :return: Mjd -- A matrix which transforms the downrange frame to the inertial frame
+
+        Downrange frame has:
+          * qbar - First basis vector points downrange in the local horizon plane
+          * hbar - Second basis vector points crossrange to the left, in the local
+                   horizon plane. This is the north side of an easterly launch
+          * rbar - Third basis is vertical
+
+        This uses a planetocentric vertical, rather than the more accurate planetodetic
+        vertical. It's pretty straightforward to do planetodetic but is quite a bit
+        more computationally intensive.
+        """
+        if deg:
+            azimuth=np.deg2rad(azimuth)
+        rbar=vnormalize(rj.reshape(-1,1))
+        zbar=np.array([[0],[0],[1]])
+        ebar=vnormalize(vcross(zbar,rj))
+        nbar=vnormalize(vcross(rbar,ebar))
+        assert vdot(nbar,zbar)>0,"nbar screwed up"
+        qbar= nbar*np.cos(azimuth)+ebar*np.sin(azimuth)
+        hbar= nbar*np.sin(azimuth)-ebar*np.cos(azimuth)
+        assert np.isclose(vdot(qbar,hbar),0),"qbar and hbar not perpendicular"
+        assert np.isclose(vdot(qbar,rbar),0),"qbar and rbar not perpendicular"
+        assert np.isclose(vdot(hbar,rbar),0),"hbar and rbar not perpendicular"
+        Mjd=np.hstack((qbar,hbar,rbar))
+        return Mjd
+    def elorb(self,*,rv:np.ndarray,vv:np.ndarray,tref:float=None,deg:bool=False):
+        return elorb(rv=rv,vv=vv,l_DU=self.re,mu=self.mu,t0=tref,deg=deg)
 
 
 class SpicePlanet(Planet):
@@ -126,39 +162,6 @@ class SpicePlanet(Planet):
         rj=(Mjb @ rb).reshape(-1)
         vj=self.wind(rj).reshape(-1)
         return np.hstack((rj,vj))
-    def downrange_frame(self,rj:np.ndarray,azimuth:float,deg:bool=True):
-        """
-        Return a matrix which transforms a vector in the downrange frame to
-        one in the inertial frame
-        :param rj: Location in the inertial frame
-        :param azimuth: range azimuth east of true north
-        :param deg: If true, azimuth is in degrees, otherwise radians
-        :return: Mjd -- A matrix which transforms the downrange frame to the inertial frame
-
-        Downrange frame has:
-          * qbar - First basis vector points downrange in the local horizon plane
-          * hbar - Second basis vector points crossrange to the left, in the local
-                   horizon plane. This is the north side of an easterly launch
-          * rbar - Third basis is vertical
-
-        This uses a planetocentric vertical, rather than the more accurate planetodetic
-        vertical. It's pretty straightforward to do planetodetic but is quite a bit
-        more computationally intensive.
-        """
-        if deg:
-            azimuth=np.deg2rad(azimuth)
-        rbar=vnormalize(rj.reshape(-1,1))
-        zbar=np.array([[0],[0],[1]])
-        ebar=vnormalize(vcross(zbar,rj))
-        nbar=vnormalize(vcross(rbar,ebar))
-        assert vdot(nbar,zbar)>0,"nbar screwed up"
-        qbar= nbar*np.cos(azimuth)+ebar*np.sin(azimuth)
-        hbar= nbar*np.sin(azimuth)-ebar*np.cos(azimuth)
-        assert np.isclose(vdot(qbar,hbar),0),"qbar and hbar not perpendicular"
-        assert np.isclose(vdot(qbar,rbar),0),"qbar and rbar not perpendicular"
-        assert np.isclose(vdot(hbar,rbar),0),"hbar and rbar not perpendicular"
-        Mjd=np.hstack((qbar,hbar,rbar))
-        return Mjd
 
 
 class Earth(SpicePlanet):

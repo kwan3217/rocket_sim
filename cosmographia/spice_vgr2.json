@@ -1,0 +1,11 @@
+
+{
+     "version": "1.0",
+     "name": "Voyager 2",
+     
+     "spiceKernels" :
+     [ 
+       "v2_kwan.tm"
+     ]
+}
+
