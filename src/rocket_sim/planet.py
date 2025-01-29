@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from atmosphere.atmosphere import Atmosphere, SimpleEarthAtmosphere
+from bmw import elorb
 from kwanmath.geodesy import xyz2lla, lla2xyz
 from kwanmath.vector import vcross, vnormalize, vdot
 from spiceypy import furnsh, kclear, gdpool, pxform
@@ -70,6 +71,8 @@ class Planet:
         the actual rotation axis in 1977 and J2000/ICRF.
         """
         return vcross(np.array([0,0,self.w0]),rj.reshape(-1))
+    def elorb(self,*,rv:np.ndarray,vv:np.ndarray,tref:float=None,deg:bool=False):
+        return elorb(rv=rv,vv=vv,l_DU=self.re,mu=self.mu,t0=tref,deg=deg)
 
 
 class SpicePlanet(Planet):
