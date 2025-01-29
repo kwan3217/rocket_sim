@@ -7,7 +7,7 @@ import pytest
 from spiceypy import kclear
 
 from vehicle.voyager import init_spice
-from vehicle.voyager_depart_target import target_pm
+from vehicle.voyager_depart_target import PMTargeter
 
 
 @pytest.fixture
@@ -21,7 +21,8 @@ def kernels():
     "vgr_id",
     [1,2]
 )
-def test_target_pm(kernels,vgr_id):
-    target_pm(export=True, optimize=False,vgr_id=vgr_id)
+def test_target_pm(tmp_path,kernels,vgr_id):
+    pm_targeter=PMTargeter(vgr_id=vgr_id,out_path=tmp_path)
+    pm_targeter.target(optimize=False)
 
 
