@@ -13,6 +13,7 @@ we will aim the burn in the prograde direction from the post-burn state.
 
 Created: 1/17/25
 """
+from pathlib import Path
 from typing import TextIO, Callable, Any
 
 import numpy as np
@@ -65,7 +66,10 @@ class BackpropagationTargeter:
             'final' and subscript 1 such as t1, y1, etc. The achieved initial state
             is likewise always identified with the word 'initial' and
     """
-    def __init__(self,*,vgr_id:int,report_name:str,t1:float,y1:np.ndarray,fps:int):
+    def __init__(self,*,vgr_id:int,report_name:str,t1:float,y1:np.ndarray,fps:int,out_path:Path=None):
+        if out_path is None:
+            out_path=Path('products')
+        self.out_path=out_path
         self.vgr_id=vgr_id
         self.et0=voyager_et0[self.vgr_id]
         self.report_name=report_name
@@ -198,7 +202,7 @@ fps: {self.fps}
         print("Optimal parameters:", final_guess)
         print("Optimal run: ")
         self.accept_params(final_guess)
-        with open(f'products/vgr{self.vgr_id}_{self.save}_optimal_run.txt',"wt") as ouf:
+        with open(self.out_path/f'vgr{self.vgr_id}_{self.save}_optimal_run.txt',"wt") as ouf:
             sc=self.sim(ouf=ouf)
             self.cost(ouf=ouf)
             if result is not None:
@@ -249,13 +253,13 @@ fps: {self.fps}
 
 
 class PMTargeter(BackpropagationTargeter):
-    def __init__(self,*,vgr_id:int):
+    def __init__(self,*,vgr_id:int,out_path:Path=None):
         """
 
         :param vgr_id:
         """
         super().__init__(vgr_id=vgr_id,report_name="backpropagation through PM burn",
-                         t1=horizons_et[vgr_id] - voyager_et0[vgr_id],
+                         t1=horizons_et[vgr_id] - voyager_et0[vgr_id],out_path=out_path,
                          y1=np.array(horizons_data[vgr_id][3:9]) * 1000.0,fps=100)  # Convert km to m and km/s to m/s
         self.plotlines["spd"]=[lambda bpt:vlength(bpt.state[3:6,:]),"m/s"]
         self.plotlines["e"] = [lambda bpt:np.array([this_elorb.e for this_elorb in bpt.elorb]),""]
@@ -332,7 +336,7 @@ yawrate: {self.yawrate:.13e} ({self.yawrate.hex()})"""
 
 
 class Centaur2Targeter(BackpropagationTargeter):
-    def __init__(self, *, pm:Vehicle|ParsedPM):
+    def __init__(self, *, pm:Vehicle|ParsedPM,out_path:Path=None):
         if isinstance(pm,ParsedPM):
             vgr_id = pm.vgr_id
             t1 = pm.simt0
@@ -342,7 +346,7 @@ class Centaur2Targeter(BackpropagationTargeter):
             t1=pm.t[-1]
             y1=pm.y
         super().__init__(vgr_id=vgr_id, report_name="backpropagation through Centaur 2 burn",
-                             t1=t1,y1=y1,fps=100)  # Convert km to m and km/s to m/s
+                             t1=t1,y1=y1,fps=100,out_path=out_path)  # Convert km to m and km/s to m/s
         self.plotlines["spd"] = [lambda bpt: vlength(bpt.state[3:6, :]), "m/s"]
         self.plotlines["e"] = [lambda bpt:np.array([this_elorb.e for this_elorb in bpt.elorb]),""]
         self.plotlines["i"] = [lambda bpt:np.array([np.rad2deg(this_elorb.i) for this_elorb in bpt.elorb]),"deg"]
