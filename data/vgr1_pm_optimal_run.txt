@@ -1,0 +1,33 @@
+Voyager 1 backpropagation through PM burn
+dpitch: -1.4486738736345e+00 (-0x1.72dc4a7dd46d7p+0)
+dyaw: -1.3109881372814e-01 (-0x1.0c7d88ec0dcfdp-3)
+dthr: -2.7463022291387e-03 (-0x1.67f69c84a6779p-9)
+yawrate: 0.0000000000000e+00 (0x0.0p+0)
+fps: 100
+ simt=0 in ET: -7.0441579085945e+08  (-0x1.4fe44176e027dp+29) (1977-09-05T12:56:49.140 TDB,1977-09-05T12:56:00.957Z)
+Initial state (simt, ICRF, SI):
+simt:   3.8152424509525e+03  rx:    7.8270056974723e+06  ry:   -4.7697578535259e+05  rz:   -5.3623021101710e+05
+           0x1.dce7c22880000p+11       0x1.ddb8f6ca362ecp+22      -0x1.d1cbf243377d8p+18      -0x1.05d4c6c0a6ef9p+19
+                              vx:    7.6604530261200e+03  vy:    1.0808671548372e+04  vz:    5.5813798253055e+03
+                                   0x1.dec73f9851185p+12       0x1.51c55f54c0b63p+13       0x1.5cd613c3b317dp+12
+Final state (simt, ICRF, SI):
+simt:   3.6000224509525e+03  rx:    6.1669802228837e+06  ry:   -2.5492715020224e+06  rz:   -1.6002419432390e+06
+           0x1.c200b7eb0f5c2p+11       0x1.786710e43b9e3p+22      -0x1.3730bc042457ep+21      -0x1.86af1f1781d1bp+20
+                              vx:    8.1876629249787e+03  vy:    8.9161355826285e+03  vz:    4.5422690399699e+03
+                                   0x1.ffba9b5738f38p+12       0x1.16a115ac58590p+13       0x1.1be44dfcdafe5p+12
+Iterations: 44
+dpitch=-1.448674 deg, dyaw=-0.131099 deg, dthr=-0.002746, yawrate=0.000000 deg/s
+ahist=-4220.43 nmi,acalc=-4220.429987989676 nmi,da=-1.2010324098810088e-05 nmi,    -0.0 sigma
+ehist=1.84171 ,ecalc=1.841710007904733 ,de=-7.904733090313698e-09 ,    -0.0 sigma
+ihist=28.5165 deg,icalc=28.516499992284547 deg,di=7.7154531652468e-09 deg,     0.0 sigma
+Cost: 1.636e-08
+Optimizer results:   message: CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
+  success: True
+   status: 0
+      fun: 1.635879347330025e-08
+        x: [-1.449e+00 -1.311e-01 -2.746e-03  0.000e+00]
+      nit: 1
+      jac: [-8.588e-04 -1.814e-04  5.748e-01        nan]
+     nfev: 44
+     njev: 11
+ hess_inv: None

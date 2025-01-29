@@ -167,6 +167,17 @@ class Vehicle:
         for stage in self.stages:
             result+=stage.mass()
         return result
+    def ve_a0(self) -> tuple[float, float]:
+        total_thrust = 0
+        total_mdot = 0
+        for engine in self.engines:
+            this_engine_thrust = engine.thrust10 * engine.throttle
+            this_engine_mdot = this_engine_thrust / engine.ve0
+            total_thrust += this_engine_thrust
+            total_mdot += this_engine_mdot
+        ve = total_thrust / total_mdot
+        a0 = total_thrust / self.mass()
+        return ve, a0
     def thrust_mag(self,t:float,dt:float,y:np.ndarray, major_step:bool)->float:
         thrust_mag=0
         for engine in self.engines:
@@ -187,7 +198,6 @@ class Vehicle:
         Fmag=self.thrust_mag(t=t,dt=dt,y=y,major_step=major_step)
         Fdir=self.thrust_dir(t=t,dt=dt,y=y,major_step=major_step)
         return Fmag*Fdir
-
     def start_tlm_point(self,*, t:float, dt:float):
         """
         Start logging a telemetry point

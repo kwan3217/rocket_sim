@@ -114,3 +114,8 @@ from a test on a test stand.
 Trace of a generic UA1205 motor, from the 120" Potential, figure 1. Curve
 is stated to be vacuum thrust at grain temperature of 80degF, very near
 the Voyager launch temperature of 82.5degF.
+
+## `world.topo.bathy.200405.3x21600x10800.png`
+  from Blue Marble Next Generation, May 2004
+  with topography shading and bathymetry,
+  available at https://visibleearth.nasa.gov/images/73701/may-blue-marble-next-generation-w-topography-and-bathymetry

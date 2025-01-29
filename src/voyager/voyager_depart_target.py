@@ -336,6 +336,7 @@ def best_pm_solution(*,vgr_id:int)->ParsedPM:
     # selected by a human to be the best, the one in products/ is the latest run.
     ps=[y for y in [x/f"vgr{vgr_id}_pm_optimal_run.txt" for x in (Path("data"),Path("products"))] if y.exists()]
     if len(ps)>0:
+        print(f"Using {ps[0]} as optimal run")
         with open(ps[0],"rt") as inf: soln_str=inf.read()
     else:
         soln_str=pm_solutions_str[vgr_id]
