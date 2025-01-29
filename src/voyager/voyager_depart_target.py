@@ -29,6 +29,7 @@ from spiceypy import str2et, pxform, timout, furnsh, gdpool
 
 from guidance.orbit import dprograde_guide, seq_guide, prograde_guide, yaw_rate_guide
 from rocket_sim.gravity import SpiceTwoBody, SpiceJ2, SpiceThirdBody
+from rocket_sim.planet import Earth, Planet
 from rocket_sim.universe import Universe
 from rocket_sim.vehicle import Vehicle, g0
 from vehicle.titan_3e_centaur import Titan3E
@@ -427,9 +428,7 @@ class BackpropagationTargeter:
           "t":[lambda bpt: np.array([x.t for x in bpt.sc.tlm_points]),None],
           "state":[lambda bpt: np.array([x.y0 for x in bpt.sc.tlm_points]).T,None],
           "mass":[lambda bpt: np.array([x.mass for x in bpt.sc.tlm_points]),'kg'],
-          "elorb":[lambda bpt: [
-            elorb(x.y0[:3], x.y0[3:], l_DU=EarthRe, mu=EarthGM, t0=x.t)
-            for x in bpt.sc.tlm_points],None]}
+          "elorb":[lambda bpt: [earth.elorb(rv=x.y0[:3], vv=x.y0[3:], tref=x.t) for x in bpt.sc.tlm_points],None]}
         self.bounds = [(-30, 30), (-30, 30), (-0.1, 0.1), (0, 0)]  # Freeze yaw rate at 0
         self.iters=0
     def guide(self):
@@ -653,9 +652,7 @@ yawrate: {self.yawrate:.13e} ({self.yawrate.hex()})"""
         # In this frame, the reported ascending node is Longitude of ascending node, not
         # right ascension. It is relative to the Earth-fixed coordinates at this instant,
         # not the sky coordinates.
-        elorb0 = elorb(r0_e, v0_e, l_DU=EarthRe, mu=EarthGM,
-                       t0=simt_track_prePM[self.vgr_id],
-                       deg=True)
+        elorb0 = earth.elorb(rv=r0_e, vv=v0_e, tref=simt_track_prePM[self.vgr_id],deg=True)
         result={}
         result["a"]=(elorb0.a/1852,target_a_prePM[self.vgr_id]/1852,2e-1   ,4,"nmi")  # da in nmi
         result["e"]=(elorb0.e     ,target_e_prePM[self.vgr_id]     ,0.00007,2,"")  # de
@@ -749,9 +746,7 @@ pitchrate: {self.pitchrate:.13e} ({self.pitchrate.hex()})"""
         # In this frame, the reported ascending node is Longitude of ascending node, not
         # right ascension. It is relative to the Earth-fixed coordinates at this instant,
         # not the sky coordinates.
-        elorb0 = elorb(r0_e, v0_e, l_DU=EarthRe, mu=EarthGM,
-                       t0=simt_track_park[self.vgr_id],
-                       deg=True)
+        elorb0 = earth.elorb(rv=r0_e, vv=v0_e, tref=simt_track_park[self.vgr_id],deg=True)
         result={}
         result["a"]=(elorb0.a/1852,target_a_park[self.vgr_id]/1852,2e-1   ,5,"nmi")  # da in nmi
         result["e"]=(elorb0.e     ,target_e_park[self.vgr_id]     ,0.00007,3,"")  # de
