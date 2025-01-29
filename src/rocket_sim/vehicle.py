@@ -141,7 +141,7 @@ class Vehicle:
         # We don't use it ourselves in our methods, preferring the y passed in
         # so we get the right one for each minor step.
         self.y:np.ndarray|None=None
-        self.tlm_points=[]
+        self.tlm_points:list[Vehicle.TlmPoint]=[]
     def reset(self):
         self.tlm_points=[]
         for stage in self.stages:

@@ -1,0 +1,38 @@
+Voyager 2 backpropagation through Centaur 2 burn
+dpitch: -1.3434313579462e+01 (-0x1.ade5e5977fe0ap+3)
+dyaw: 9.0866165296633e+00 (0x1.22c59007464c4p+3)
+dthr: -2.2207612942276e-02 (-0x1.6bd97ad3cb9a0p-6)
+pitchrate: 5.1398830862380e-02 (0x1.a50f293368ee3p-5)
+fps: 100 
+ simt=0 in ET: -7.0579256756118e+08  (-0x1.508c51bc7d4dap+29) (1977-08-20T14:30:32.438 TDB,1977-08-20T14:29:44.256Z)
+Initial state (simt, ICRF, SI): 
+simt:   3.5620341831827e+03  rx:    6.1732500936396e+06  ry:   -3.0266273484619e+06  rz:    1.7607094394932e+05
+           0x1.bd411807547aep+11       0x1.78c9085fe30f4p+22      -0x1.71761ac9a660ap+21      0x1.57e378d354c70p+17
+                              vx:    6.6402597612219e+03  vy:    7.0938011167170e+03  vz:    8.3795285037417e+03
+                                   0x1.9f0427fb620cdp+12       0x1.bb5cd15fc33d3p+12       0x1.05dc3a602b74cp+13
+Final state (simt, ICRF, SI): 
+simt:   3.1384941831827e+03  rx:    3.3672814610347e+06  ry:   -5.0914172680136e+06  rz:   -2.4289398139177e+06
+           0x1.884fd05940000p+11       0x1.9b0b8bb032f26p+21      -0x1.36c1651272269p+22      -0x1.28805e82e74dcp+21
+                              vx:    6.3847584033959e+03  vy:    2.4276188516294e+03  vz:    3.7575352057995e+03
+                                   0x1.8f0c226b99685p+12       0x1.2f73cda1eea5ep+11       0x1.d5b12067e9ad2p+11
+State just after Centaur burn 1 (simt, ICRF, SI): 
+simt:   5.8599418318272e+02  rx:   -3.9871681985960e+06  ry:    4.8171928996869e+06  rz:    2.0538720070181e+06
+           0x1.24ff4164fffffp+9       -0x1.e6b70196b982bp+21      0x1.2604a3994783ap+22      0x1.f56f001cbef79p+20
+                              vx:   -5.8613332285082e+03  vy:   -3.1217068642314e+03  vz:   -4.0570297771765e+03
+                                   -0x1.6e5554e76a8bfp+12       -0x1.86369ea1bc961p+11       -0x1.fb20f3ef43e41p+11
+Iterations: 110
+dpitch=-13.434314 deg, dyaw=9.086617 deg, dthr=-0.022208, pitchrate=0.051399 deg/s
+ahist=3553.91 nmi,acalc=3553.9100259402826 nmi,da=-2.5940282739611575e-05 nmi,    -0.0 sigma
+ehist=1e-05 ,ecalc=1.0001076182181407e-05 ,de=-1.0761821814065856e-09 ,    -0.0 sigma
+ihist=37.3625 deg,icalc=37.362500825296976 deg,di=-8.252969792010845e-07 deg,    -0.0 sigma
+Cost: 2.387e-08
+Optimizer results:   message: CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
+  success: True
+   status: 0
+      fun: 2.3869968588258503e-08
+        x: [-1.343e+01  9.087e+00 -2.221e-02  5.140e-02]
+      nit: 18
+      jac: [-5.475e-03  1.082e-02  6.468e-01  4.110e+00]
+     nfev: 110
+     njev: 22
+ hess_inv: <4x4 LbfgsInvHessProduct with dtype=float64>

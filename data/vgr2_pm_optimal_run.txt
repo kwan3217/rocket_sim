@@ -1,0 +1,33 @@
+Voyager 2 backpropagation through PM burn
+dpitch: -1.2225338175589e+00 (-0x1.38f7f9ecab6aap+0)
+dyaw: -5.5151257204035e-01 (-0x1.1a5fdb187e056p-1)
+dthr: -4.1988923976743e-03 (-0x1.132db98705ebdp-8)
+yawrate: 0.0000000000000e+00 (0x0.0p+0)
+fps: 100 
+ simt=0 in ET: -7.0579256756118e+08  (-0x1.508c51bc7d4dap+29) (1977-08-20T14:30:32.438 TDB,1977-08-20T14:29:44.256Z)
+Initial state (simt, ICRF, SI): 
+simt:   3.7797441831827e+03  rx:    7.5134383545304e+06  ry:   -1.3110472104682e+06  rz:    2.0893893198094e+06
+           0x1.d877d05940000p+11       0x1.ca95796b0a031p+22      -0x1.4014735e13e1ep+20      0x1.fe1ad51df07c0p+20
+                              vx:    5.9205250587370e+03  vy:    8.8788614501394e+03  vz:    9.4617661353858e+03
+                                   0x1.720866a3fd7d2p+12       0x1.1576e43ff87dbp+13       0x1.27ae210b96d21p+13
+Final state (simt, ICRF, SI): 
+simt:   3.5620341831827e+03  rx:    6.1732500936396e+06  ry:   -3.0266273484619e+06  rz:    1.7607094394932e+05
+           0x1.bd411807547aep+11       0x1.78c9085fe30f4p+22      -0x1.71761ac9a660ap+21      0x1.57e378d354c70p+17
+                              vx:    6.6402597612219e+03  vy:    7.0938011167170e+03  vz:    8.3795285037417e+03
+                                   0x1.9f0427fb620cdp+12       0x1.bb5cd15fc33d3p+12       0x1.05dc3a602b74cp+13
+Iterations: 44
+dpitch=-1.222534 deg, dyaw=-0.551513 deg, dthr=-0.004199, yawrate=0.000000 deg/s
+ahist=-4417.83 nmi,acalc=-4417.829989595307 nmi,da=-1.0404693057353143e-05 nmi,    -0.0 sigma
+ehist=1.80349 ,ecalc=1.8034900098048345 ,de=-9.804834499860249e-09 ,    -0.0 sigma
+ihist=41.7475 deg,icalc=41.74749994625625 deg,di=5.374375433575551e-08 deg,     0.0 sigma
+Cost: 2.235e-08
+Optimizer results:   message: ABNORMAL: 
+  success: False
+   status: 2
+      fun: 2.235466762106062e-08
+        x: [-1.223e+00 -5.515e-01 -4.199e-03  0.000e+00]
+      nit: 0
+      jac: [-8.904e-04 -9.484e-04  8.734e-01        nan]
+     nfev: 44
+     njev: 11
+ hess_inv: None
