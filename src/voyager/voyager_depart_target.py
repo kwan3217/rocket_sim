@@ -81,8 +81,7 @@ target_c3_park={1:-60.90520,2:-60.9036} # km**2/s**2, not actually a target valu
 # Note that this is in UTC.
 voyager_cal0={1:"1977-09-05T12:56:00.958Z",
               2:"1977-08-20T14:29:44.256Z"}
-EarthGM=None
-EarthRe=None
+earth:Planet=None
 # These hold the Spice ET of the Horizons data point for each mission
 horizons_et={}
 # These hold the Spice ET of the official T=0 for each mission
@@ -371,9 +370,8 @@ def init_spice():
     furnsh("data/gm_de440.tpc")  # Masses of all planets and many satellites, including Earth
     furnsh("products/gravity_EGM2008_J2.tpc") # Cover up Earth mass from gm_de440.tpc and size from pck00011.tpc
     furnsh("data/de440.bsp")     # Solar system ephemeris
-    global EarthGM,EarthRe
-    EarthGM = gdpool("BODY399_GM", 0, 1)[0] * 1000 ** 3
-    EarthRe = gdpool("BODY399_RADII", 0, 3)[0] * 1000
+    global earth
+    earth=Earth()
     global horizons_et, voyager_et0
     for k in (1,2):
         # Time of Horizons vector, considered to be t1. Calculate
@@ -683,7 +681,7 @@ class Centaur2Targeter(BackpropagationTargeter):
         self.plotlines["spd"] = [lambda bpt: vlength(bpt.state[3:6, :]), "m/s"]
         self.plotlines["e"] = [lambda bpt:np.array([this_elorb.e for this_elorb in bpt.elorb]),""]
         self.plotlines["i"] = [lambda bpt:np.array([np.rad2deg(this_elorb.i) for this_elorb in bpt.elorb]),"deg"]
-        self.plotlines["c3"] = [lambda bpt: -(EarthGM / (1000 ** 3)) / (
+        self.plotlines["c3"] = [lambda bpt: -(earth.mu / (1000 ** 3)) / (
                     np.array([this_elorb.a for this_elorb in bpt.elorb]) / 1000),"km**2/s**2"]  # work directly in km
         # Run back to this point at 100Hz, then back to parking solution at 10Hz
         self.sc:Vehicle = Titan3E(tc_id=5+self.vgr_id)
